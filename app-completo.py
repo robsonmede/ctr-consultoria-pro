@@ -3,30 +3,13 @@ import re
 import unicodedata
 from datetime import date, datetime
 
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import cm
-from reportlab.platypus import (
-    Image,
-    PageBreak,
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-)
-
 
 # ============================================================
-# CONFIGURAÇÃO
+# CONFIGURAÇÃO DA PÁGINA
 # ============================================================
 
 st.set_page_config(
@@ -36,7 +19,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-
 # ============================================================
 # ESTILO
 # ============================================================
@@ -45,198 +27,146 @@ st.markdown(
     """
     <style>
         :root {
-            --ctr-primary: #0787a6;
-            --ctr-secondary: #102f3b;
-            --ctr-accent: #20b5d6;
-            --ctr-background: #dcebef;
-            --ctr-surface: #edf6f8;
-            --ctr-card: #ffffff;
-            --ctr-border: #b7d2da;
+            --ctr-primary: #047f9e;
+            --ctr-secondary: #0b3040;
             --ctr-text: #102f3b;
-            --ctr-muted: #54717b;
+            --ctr-muted: #5d7480;
+            --ctr-bg: #eef4f7;
+            --ctr-card: #ffffff;
+            --ctr-border: #cbdce3;
         }
 
-        html,
-        body,
-        [data-testid="stAppViewContainer"],
         .stApp {
-            background:
-                radial-gradient(
-                    circle at 85% 8%,
-                    rgba(32, 181, 214, 0.18),
-                    transparent 28%
-                ),
-                linear-gradient(
-                    145deg,
-                    #d5e7ec 0%,
-                    #eaf4f7 48%,
-                    #cddfe5 100%
-                ) !important;
-            color: var(--ctr-text);
-        }
-
-        [data-testid="stHeader"] {
-            background-color: rgba(213, 231, 236, 0.84);
-            backdrop-filter: blur(8px);
-        }
-
-        [data-testid="stMainBlockContainer"] {
-            padding-top: 2rem;
-        }
-
-        h1, h2, h3, h4, p, label {
-            color: var(--ctr-text);
-        }
-
-        [data-testid="stSidebar"] {
-            background:
-                linear-gradient(
-                    180deg,
-                    #0b2631 0%,
-                    #103b49 55%,
-                    #075d72 100%
-                );
-            border-right: 1px solid rgba(255, 255, 255, 0.12);
-        }
-
-        [data-testid="stSidebar"] * {
-            color: #ffffff !important;
-        }
-
-        [data-testid="stSidebar"] input {
-            color: #102f3b !important;
-            background-color: #ffffff !important;
-        }
-
-        .ctr-header {
-            padding: 27px;
-            border-radius: 17px;
-            background:
-                linear-gradient(
-                    120deg,
-                    #102f3b 0%,
-                    #075f74 54%,
-                    #0795b7 100%
-                );
-            margin-bottom: 22px;
-            box-shadow: 0 12px 28px rgba(16, 47, 59, 0.24);
-        }
-
-        .ctr-header h1,
-        .ctr-header p {
-            color: #ffffff !important;
-            margin: 0;
-        }
-
-        .ctr-header p {
-            margin-top: 8px;
-            opacity: 0.92;
-        }
-
-        .organization-card {
             background:
                 linear-gradient(
                     135deg,
-                    rgba(7, 135, 166, 0.16),
-                    rgba(255, 255, 255, 0.90)
+                    #eef4f7 0%,
+                    #f8fbfc 50%,
+                    #e6f0f4 100%
                 );
-            border: 1px solid #91c1cd;
-            border-left: 6px solid #0787a6;
+            color: var(--ctr-text);
+        }
+
+        section[data-testid="stSidebar"] {
+            background:
+                linear-gradient(
+                    180deg,
+                    #081f2c 0%,
+                    #0b3040 55%,
+                    #047f9e 140%
+                );
+        }
+
+        section[data-testid="stSidebar"] * {
+            color: #f5fbfd !important;
+        }
+
+        section[data-testid="stSidebar"] input {
+            color: #102f3b !important;
+            background-color: #ffffff !important;
+        }
+
+        section[data-testid="stSidebar"]
+        div[data-baseweb="select"] > div {
+            color: #102f3b !important;
+            background-color: #ffffff !important;
+        }
+
+        h1, h2, h3, h4, h5, h6,
+        p, label, span {
+            color: var(--ctr-text);
+        }
+
+        .ctr-header {
+            padding: 1.25rem 1.4rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--ctr-border);
+            border-left: 6px solid var(--ctr-primary);
             border-radius: 14px;
-            padding: 17px 19px;
-            margin-bottom: 19px;
-            box-shadow: 0 6px 16px rgba(16, 47, 59, 0.10);
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 8px 24px rgba(11, 48, 64, 0.07);
+        }
+
+        .ctr-header h2 {
+            margin: 0;
+            color: var(--ctr-secondary);
+        }
+
+        .ctr-header p {
+            margin: 0.4rem 0 0 0;
+            color: var(--ctr-muted);
         }
 
         .question-card {
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(255, 255, 255, 0.98),
-                    rgba(237, 247, 249, 0.98)
-                );
-            border: 1px solid #b7d2da;
-            border-left: 5px solid #0787a6;
+            padding: 0.85rem 1rem;
+            margin: 0.6rem 0 0.25rem 0;
+            border: 1px solid var(--ctr-border);
+            border-left: 5px solid var(--ctr-primary);
+            border-radius: 10px;
+            background-color: #ffffff;
+            color: var(--ctr-text);
+        }
+
+        .info-card {
+            padding: 1rem;
+            border: 1px solid var(--ctr-border);
             border-radius: 12px;
-            padding: 15px;
-            margin: 12px 0 7px;
-            box-shadow: 0 5px 14px rgba(16, 47, 59, 0.08);
+            background-color: #ffffff;
+            box-shadow: 0 5px 18px rgba(11, 48, 64, 0.06);
         }
 
-        [data-testid="stMetric"] {
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(255, 255, 255, 0.98),
-                    rgba(230, 243, 247, 0.98)
-                );
-            border: 1px solid #a9cbd4;
-            border-top: 4px solid #0787a6;
-            border-radius: 14px;
-            padding: 17px;
-            box-shadow: 0 7px 18px rgba(16, 47, 59, 0.11);
-        }
-
-        [data-testid="stMetricValue"] {
-            color: #075f74 !important;
-        }
-
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            background-color: rgba(244, 250, 252, 0.74);
-            border-color: #a9cbd4 !important;
-            border-radius: 14px;
+        div[data-testid="stMetric"] {
+            padding: 1rem;
+            border: 1px solid var(--ctr-border);
+            border-radius: 12px;
+            background-color: #ffffff;
+            box-shadow: 0 5px 18px rgba(11, 48, 64, 0.06);
         }
 
         div[data-testid="stTextInput"] input,
+        div[data-testid="stTextArea"] textarea,
         div[data-testid="stNumberInput"] input,
-        div[data-testid="stDateInput"] input,
-        div[data-testid="stTextArea"] textarea {
-            background-color: #ffffff !important;
-            color: #102f3b !important;
-            border: 1px solid #9fbfc8 !important;
-        }
-
         div[data-baseweb="select"] > div {
+            color: var(--ctr-text) !important;
             background-color: #ffffff !important;
-            color: #102f3b !important;
+            border-color: var(--ctr-border) !important;
         }
 
         div[role="listbox"],
-        div[role="option"] {
+        div[role="option"],
+        ul[role="listbox"] {
+            color: var(--ctr-text) !important;
             background-color: #ffffff !important;
-            color: #102f3b !important;
+        }
+
+        div[role="option"]:hover {
+            background-color: #e6f3f6 !important;
+        }
+
+        div[data-testid="stExpander"] {
+            background-color: #ffffff;
+            border-color: var(--ctr-border);
+        }
+
+        .stButton > button,
+        .stDownloadButton > button {
+            border-radius: 8px;
+            border: 1px solid var(--ctr-primary);
+        }
+
+        .stButton > button[kind="primary"] {
+            background-color: var(--ctr-primary);
+            color: #ffffff;
         }
 
         div[data-testid="stDataFrame"],
-        div[data-testid="stPlotlyChart"] {
-            background-color: rgba(247, 252, 253, 0.82);
-            border: 1px solid #adcbd3;
-            border-radius: 14px;
-            padding: 8px;
-            box-shadow: 0 5px 16px rgba(16, 47, 59, 0.09);
-        }
-
-        .warning-box {
-            background: #fff3e0;
-            border: 1px solid #ffd19a;
-            border-left: 5px solid #ef6c00;
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 10px;
-            color: #563100;
-        }
-
-        .ctr-footer {
-            text-align: center;
-            color: #3f626d;
-            font-size: 0.84rem;
-            padding: 28px 8px 12px;
+        div[data-testid="stTable"] {
+            background-color: #ffffff;
         }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
 
 # ============================================================
 # CONSTANTES
@@ -251,145 +181,131 @@ DIMENSOES = [
     "Recuperar",
 ]
 
-PERGUNTAS_NIST = {
-    "Governar": [
-        "Existe uma política formal de segurança da informação?",
-        "Papéis e responsabilidades de segurança estão definidos?",
-        "Riscos cibernéticos são reportados à liderança?",
-        "Fornecedores são avaliados quanto à segurança?",
-    ],
-    "Identificar": [
-        "A organização mantém inventário atualizado de ativos?",
-        "Os dados críticos estão identificados e classificados?",
-        "Existe processo formal de avaliação de riscos?",
-        "Vulnerabilidades são identificadas periodicamente?",
-    ],
-    "Proteger": [
-        "A autenticação multifator é utilizada em acessos críticos?",
-        "Privilégios administrativos são controlados e revisados?",
-        "Existe programa contínuo de conscientização?",
-        "Backups são protegidos contra alteração ou exclusão?",
-    ],
-    "Detectar": [
-        "Logs de segurança são coletados e centralizados?",
-        "Há monitoramento contínuo de eventos suspeitos?",
-        "Alertas possuem critérios de priorização?",
-        "A organização realiza testes de detecção?",
-    ],
-    "Responder": [
-        "Existe plano documentado de resposta a incidentes?",
-        "Os responsáveis por incidentes são definidos?",
-        "Existe procedimento de comunicação de incidentes?",
-        "São realizados exercícios ou simulações periódicas?",
-    ],
-    "Recuperar": [
-        "Existe plano de recuperação de desastres?",
-        "Backups são testados periodicamente?",
-        "Objetivos de recuperação RTO e RPO estão definidos?",
-        "Lições aprendidas são incorporadas após incidentes?",
-    ],
-}
-
 OPCOES_MATURIDADE = {
     "Não implementado": 0,
-    "Inicial / informal": 1,
-    "Parcialmente implementado": 2,
-    "Implementado": 3,
-    "Gerenciado e medido": 4,
+    "Inicial": 1,
+    "Básico": 2,
+    "Definido": 3,
+    "Gerenciado": 4,
     "Otimizado": 5,
+}
+
+PERGUNTAS_NIST = {
+    "Governar": [
+        "A organização possui uma política formal de segurança da informação?",
+        "Papéis e responsabilidades de cibersegurança estão documentados?",
+        "Os riscos cibernéticos são considerados nas decisões estratégicas?",
+        "Fornecedores são avaliados quanto aos riscos de segurança?",
+        "A liderança acompanha indicadores de segurança periodicamente?",
+    ],
+    "Identificar": [
+        "Existe um inventário atualizado de ativos de hardware e software?",
+        "Dados críticos estão identificados e classificados?",
+        "Vulnerabilidades são identificadas periodicamente?",
+        "A organização mantém um registro formal de riscos?",
+        "Dependências e serviços críticos estão documentados?",
+    ],
+    "Proteger": [
+        "Controles de acesso seguem o princípio do menor privilégio?",
+        "Autenticação multifator é utilizada em acessos críticos?",
+        "Colaboradores recebem treinamento de segurança?",
+        "Backups são protegidos contra alteração e exclusão indevida?",
+        "Existe processo formal de gestão de patches?",
+    ],
+    "Detectar": [
+        "Logs de sistemas críticos são centralizados e monitorados?",
+        "Há alertas para atividades suspeitas?",
+        "Eventos de segurança são analisados por responsáveis definidos?",
+        "Existe monitoramento de endpoints e rede?",
+        "As regras de detecção são revisadas periodicamente?",
+    ],
+    "Responder": [
+        "Existe um plano documentado de resposta a incidentes?",
+        "O plano define responsáveis, contatos e escalonamento?",
+        "Incidentes são registrados e classificados?",
+        "São realizados exercícios ou simulações de incidentes?",
+        "Existe um processo de comunicação durante crises?",
+    ],
+    "Recuperar": [
+        "Existe um plano de continuidade e recuperação?",
+        "Os backups são testados periodicamente?",
+        "Objetivos de recuperação RTO e RPO estão definidos?",
+        "Lições aprendidas são incorporadas após incidentes?",
+        "A restauração dos principais serviços é testada?",
+    ],
 }
 
 FRAMEWORKS = {
     "NIST CSF 2.0": [
-        "Governança de riscos cibernéticos",
-        "Inventário e classificação de ativos",
+        "Governança e estratégia de segurança",
+        "Gestão de ativos e riscos",
         "Proteção de identidades e acessos",
         "Monitoramento e detecção",
         "Resposta a incidentes",
         "Recuperação e continuidade",
     ],
-    "ISO 27001:2022": [
+    "ISO 27001": [
         "Contexto da organização",
         "Liderança e política de segurança",
-        "Planejamento e tratamento de riscos",
-        "Competência e conscientização",
-        "Controles organizacionais e tecnológicos",
-        "Auditoria e melhoria contínua",
+        "Planejamento e avaliação de riscos",
+        "Suporte e conscientização",
+        "Operação dos controles",
+        "Avaliação de desempenho",
+        "Melhoria contínua",
     ],
     "LGPD": [
         "Mapeamento de dados pessoais",
         "Bases legais de tratamento",
-        "Direitos dos titulares",
+        "Atendimento aos direitos dos titulares",
         "Gestão de operadores e terceiros",
-        "Resposta a incidentes com dados pessoais",
-        "Governança e registro das operações",
+        "Segurança dos dados pessoais",
+        "Resposta a incidentes de privacidade",
+        "Governança e atuação do encarregado",
     ],
 }
 
-STATUS_ACAO = [
-    "Não iniciado",
-    "Em andamento",
-    "Bloqueado",
-    "Concluído",
+COLUNAS_RISCOS = [
+    "ID",
+    "Risco",
+    "Categoria",
+    "Probabilidade",
+    "Impacto",
+    "Nível",
+    "Tratamento",
+    "Responsável",
+    "Status",
 ]
 
+COLUNAS_ACOES = [
+    "ID",
+    "Ação",
+    "Origem",
+    "Prioridade",
+    "Responsável",
+    "Prazo",
+    "Status",
+]
+
+COLUNAS_REUNIOES = [
+    "ID",
+    "Data",
+    "Título",
+    "Participantes",
+    "Notas",
+]
 
 # ============================================================
-# DATAFRAMES E ESTADO
+# ESTADO E FUNÇÕES AUXILIARES
 # ============================================================
-
-def dataframe_riscos():
-    return pd.DataFrame(
-        columns=[
-            "ID",
-            "Risco",
-            "Categoria",
-            "Probabilidade",
-            "Impacto",
-            "Nível",
-            "Responsável",
-            "Tratamento",
-            "Status",
-        ]
-    )
-
-
-def dataframe_acoes():
-    return pd.DataFrame(
-        columns=[
-            "ID",
-            "Ação",
-            "Origem",
-            "Prioridade",
-            "Responsável",
-            "Início",
-            "Prazo",
-            "Status",
-            "Progresso",
-        ]
-    )
-
-
-def dataframe_reunioes():
-    return pd.DataFrame(
-        columns=[
-            "Data",
-            "Título",
-            "Participantes",
-            "Resumo",
-            "Decisões",
-            "Próximos passos",
-        ]
-    )
 
 
 def criar_dados_organizacao():
     return {
         "assessment": {},
+        "riscos": [],
+        "acoes": [],
         "compliance": {},
-        "riscos": dataframe_riscos(),
-        "acoes": dataframe_acoes(),
-        "reunioes": dataframe_reunioes(),
+        "reunioes": [],
     }
 
 
@@ -397,573 +313,355 @@ def inicializar_estado():
     if "organizacoes" not in st.session_state:
         st.session_state.organizacoes = {}
 
-    if "organizacao_ativa" not in st.session_state:
-        st.session_state.organizacao_ativa = None
-
-    if "consultor" not in st.session_state:
-        st.session_state.consultor = ""
+    if "organizacao_ativa_id" not in st.session_state:
+        st.session_state.organizacao_ativa_id = None
 
 
-def gerar_id_organizacao():
-    if not st.session_state.organizacoes:
-        return 1
-    return max(st.session_state.organizacoes.keys()) + 1
-
-
-def cadastrar_organizacao(
-    razao_social,
-    nome_fantasia,
-    documento,
-    setor,
-    porte,
-    responsavel,
-    email,
-):
-    organizacao_id = gerar_id_organizacao()
-
-    st.session_state.organizacoes[organizacao_id] = {
-        "id": organizacao_id,
-        "razao_social": razao_social.strip(),
-        "nome_fantasia": nome_fantasia.strip() or razao_social.strip(),
-        "documento": documento.strip(),
-        "setor": setor,
-        "porte": porte,
-        "responsavel": responsavel.strip(),
-        "email": email.strip(),
-        "data_cadastro": datetime.now(),
-        "dados": criar_dados_organizacao(),
-    }
-
-    st.session_state.organizacao_ativa = organizacao_id
-
-
-def excluir_organizacao(organizacao_id):
-    st.session_state.organizacoes.pop(organizacao_id, None)
-    ids = list(st.session_state.organizacoes.keys())
-    st.session_state.organizacao_ativa = ids[0] if ids else None
+def normalizar_id(texto):
+    texto = unicodedata.normalize("NFKD", texto)
+    texto = texto.encode("ascii", "ignore").decode("ascii")
+    texto = re.sub(r"[^a-zA-Z0-9]+", "-", texto.lower()).strip("-")
+    return texto or f"organizacao-{int(datetime.now().timestamp())}"
 
 
 def obter_organizacao_ativa():
-    organizacao_id = st.session_state.organizacao_ativa
-    if organizacao_id is None:
+    organizacao_id = st.session_state.get("organizacao_ativa_id")
+
+    if not organizacao_id:
         return None
+
     return st.session_state.organizacoes.get(organizacao_id)
 
 
 def obter_dados_ativos():
     organizacao = obter_organizacao_ativa()
-    return organizacao["dados"] if organizacao else None
+
+    if organizacao is None:
+        return None
+
+    if "dados" not in organizacao:
+        organizacao["dados"] = criar_dados_organizacao()
+
+    return organizacao["dados"]
 
 
-inicializar_estado()
-
-
-# ============================================================
-# FUNÇÕES DE NEGÓCIO
-# ============================================================
-
-def cabecalho(titulo, descricao):
+def cabecalho(titulo, subtitulo):
     st.markdown(
         f"""
         <div class="ctr-header">
-            <h1>{titulo}</h1>
-            <p>{descricao}</p>
+            <h2>{titulo}</h2>
+            <p>{subtitulo}</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def sanitizar_texto(valor):
-    if pd.isna(valor):
-        return ""
+def dataframe_lista(lista, colunas):
+    if not lista:
+        return pd.DataFrame(columns=colunas)
 
-    return (
-        str(valor)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    df = pd.DataFrame(lista)
 
+    for coluna in colunas:
+        if coluna not in df.columns:
+            df[coluna] = ""
 
-def nome_seguro(nome):
-    texto = unicodedata.normalize("NFKD", nome)
-    texto = texto.encode("ascii", "ignore").decode("ascii")
-    texto = re.sub(r"[^a-zA-Z0-9_-]+", "_", texto.lower())
-    return texto.strip("_") or "cliente"
+    return df[colunas]
 
 
-def calcular_nivel_risco(probabilidade, impacto):
-    pontuacao = int(probabilidade) * int(impacto)
-
-    if pontuacao >= 20:
-        return pontuacao, "Crítico"
-    if pontuacao >= 12:
-        return pontuacao, "Alto"
-    if pontuacao >= 6:
-        return pontuacao, "Médio"
-    return pontuacao, "Baixo"
-
-
-def calcular_assessment(dados=None):
-    dados = dados or obter_dados_ativos()
-
-    if dados is None:
-        return {dimensao: 0 for dimensao in DIMENSOES}
-
-    assessment = dados["assessment"]
+def calcular_assessment(dados):
     resultados = {}
 
-    for dimensao, perguntas in PERGUNTAS_NIST.items():
+    for dimensao in DIMENSOES:
         valores = []
 
-        for indice, _ in enumerate(perguntas):
-            resposta = assessment.get(
-                f"{dimensao}_{indice}",
+        for indice, _ in enumerate(PERGUNTAS_NIST[dimensao]):
+            chave = f"{dimensao}_{indice}"
+            resposta = dados["assessment"].get(
+                chave,
                 "Não implementado",
             )
             valores.append(OPCOES_MATURIDADE.get(resposta, 0))
 
-        resultados[dimensao] = round(
-            sum(valores) / len(valores),
-            2,
+        resultados[dimensao] = (
+            sum(valores) / len(valores) if valores else 0
         )
+
+    resultados["Geral"] = (
+        sum(resultados[dimensao] for dimensao in DIMENSOES)
+        / len(DIMENSOES)
+    )
 
     return resultados
 
 
-def obter_score_geral(dados=None):
-    resultados = calcular_assessment(dados)
-    media = sum(resultados.values()) / len(resultados)
-    return round((media / 5) * 100, 1)
-
-
-def classificar_maturidade(score):
-    if score >= 85:
-        return "Otimizado"
-    if score >= 70:
-        return "Gerenciado"
-    if score >= 50:
-        return "Definido"
-    if score >= 30:
+def classificar_maturidade(pontuacao):
+    if pontuacao < 1:
+        return "Não implementado"
+    if pontuacao < 2:
         return "Inicial"
-    return "Ad hoc"
+    if pontuacao < 3:
+        return "Básico"
+    if pontuacao < 4:
+        return "Definido"
+    if pontuacao < 4.75:
+        return "Gerenciado"
+    return "Otimizado"
 
 
-def obter_recomendacoes(dados=None):
-    resultados = calcular_assessment(dados)
+def classificar_risco(probabilidade, impacto):
+    valor = probabilidade * impacto
 
-    textos = {
-        "Governar": "Formalizar políticas, responsabilidades, indicadores e supervisão executiva dos riscos.",
-        "Identificar": "Atualizar inventários, classificar informações e institucionalizar avaliações de risco.",
-        "Proteger": "Priorizar MFA, gestão de acessos, conscientização e proteção dos backups.",
-        "Detectar": "Centralizar logs, definir casos de uso e implementar monitoramento contínuo.",
-        "Responder": "Documentar, testar e manter um plano de resposta a incidentes.",
-        "Recuperar": "Definir RTO/RPO, testar restauração e aprimorar a continuidade operacional.",
-    }
+    if valor >= 20:
+        return "Crítico"
+    if valor >= 12:
+        return "Alto"
+    if valor >= 6:
+        return "Médio"
+    return "Baixo"
 
+
+def cor_risco(nivel):
+    return {
+        "Crítico": "#b91c1c",
+        "Alto": "#ea580c",
+        "Médio": "#eab308",
+        "Baixo": "#16a34a",
+    }.get(nivel, "#64748b")
+
+
+def proximo_id(registros):
+    if not registros:
+        return 1
+
+    ids = []
+
+    for registro in registros:
+        try:
+            ids.append(int(registro.get("ID", 0)))
+        except (TypeError, ValueError):
+            pass
+
+    return max(ids, default=0) + 1
+
+
+def remover_registro(lista, registro_id):
     return [
-        {
-            "Dimensão": dimensao,
-            "Maturidade": nota,
-            "Recomendação": textos[dimensao],
-        }
-        for dimensao, nota in sorted(
-            resultados.items(),
-            key=lambda item: item[1],
-        )
-        if nota < 3
+        item
+        for item in lista
+        if str(item.get("ID")) != str(registro_id)
     ]
 
 
-# ============================================================
-# GRÁFICOS PARA PDF
-# ============================================================
+def gerar_csv_completo(organizacao, dados):
+    buffer = io.StringIO()
 
-def salvar_figura_buffer(figura):
-    buffer = io.BytesIO()
-    figura.savefig(
-        buffer,
-        format="png",
-        dpi=170,
-        bbox_inches="tight",
-        facecolor="white",
-    )
-    plt.close(figura)
-    buffer.seek(0)
-    return buffer
+    buffer.write("CTR DEFENSE - RELATORIO CONSOLIDADO\n")
+    buffer.write(f"Organizacao;{organizacao['nome']}\n")
+    buffer.write(f"Segmento;{organizacao.get('segmento', '')}\n")
+    buffer.write(f"Responsavel;{organizacao.get('responsavel', '')}\n")
+    buffer.write(f"Data;{datetime.now().strftime('%d/%m/%Y %H:%M')}\n\n")
 
-
-def grafico_radar_pdf(resultados):
-    dimensoes = list(resultados.keys())
-    valores = list(resultados.values())
-    angulos = np.linspace(
-        0,
-        2 * np.pi,
-        len(dimensoes),
-        endpoint=False,
-    ).tolist()
-
-    angulos += angulos[:1]
-    valores += valores[:1]
-
-    figura, eixo = plt.subplots(
-        figsize=(7.2, 5.2),
-        subplot_kw={"polar": True},
-    )
-
-    eixo.plot(angulos, valores, color="#047f9e", linewidth=2.5)
-    eixo.fill(angulos, valores, color="#20b5d6", alpha=0.28)
-    eixo.set_xticks(angulos[:-1])
-    eixo.set_xticklabels(dimensoes, fontsize=9)
-    eixo.set_ylim(0, 5)
-    eixo.set_yticks([1, 2, 3, 4, 5])
-    eixo.grid(color="#b7d2da", alpha=0.8)
-    eixo.set_title(
-        "Radar de maturidade NIST CSF 2.0",
-        fontsize=13,
-        fontweight="bold",
-        color="#102f3b",
-        pad=20,
-    )
-
-    figura.tight_layout()
-    return salvar_figura_buffer(figura)
-
-
-def grafico_barras_pdf(resultados):
-    dimensoes = list(resultados.keys())
-    valores = list(resultados.values())
-
-    figura, eixo = plt.subplots(figsize=(7.5, 4.8))
-
-    barras = eixo.barh(
-        dimensoes,
-        valores,
-        color="#0787a6",
-    )
-
-    eixo.set_xlim(0, 5)
-    eixo.set_xlabel("Nível de maturidade")
-    eixo.set_title(
-        "Maturidade por dimensão",
-        fontsize=13,
-        fontweight="bold",
-        color="#102f3b",
-    )
-    eixo.grid(axis="x", linestyle="--", alpha=0.35)
-    eixo.invert_yaxis()
-
-    for barra, valor in zip(barras, valores):
-        eixo.text(
-            min(valor + 0.08, 4.8),
-            barra.get_y() + barra.get_height() / 2,
-            f"{valor:.2f}",
-            va="center",
-            fontweight="bold",
-        )
-
-    figura.tight_layout()
-    return salvar_figura_buffer(figura)
-
-
-def grafico_pizza_pdf(riscos):
-    figura, eixo = plt.subplots(figsize=(7, 4.8))
-
-    if riscos.empty:
-        eixo.text(
-            0.5,
-            0.5,
-            "Nenhum risco cadastrado",
-            ha="center",
-            va="center",
-            fontsize=14,
-            color="#54717b",
-        )
-        eixo.axis("off")
-    else:
-        distribuicao = (
-            riscos["Nível"]
-            .value_counts()
-            .reindex(
-                ["Crítico", "Alto", "Médio", "Baixo"],
-                fill_value=0,
-            )
-        )
-        distribuicao = distribuicao[distribuicao > 0]
-
-        mapa_cores = {
-            "Crítico": "#c62828",
-            "Alto": "#ef6c00",
-            "Médio": "#f9a825",
-            "Baixo": "#2e7d32",
-        }
-
-        eixo.pie(
-            distribuicao.values,
-            labels=distribuicao.index,
-            autopct="%1.1f%%",
-            startangle=90,
-            colors=[mapa_cores[nivel] for nivel in distribuicao.index],
-            wedgeprops={"width": 0.55, "edgecolor": "white"},
-        )
-        eixo.set_title(
-            "Distribuição dos riscos",
-            fontsize=13,
-            fontweight="bold",
-            color="#102f3b",
-        )
-
-    figura.tight_layout()
-    return salvar_figura_buffer(figura)
-
-
-# ============================================================
-# RELATÓRIO PDF
-# ============================================================
-
-def adicionar_rodape_pdf(canvas, documento):
-    canvas.saveState()
-    largura, _ = landscape(A4)
-
-    canvas.setStrokeColor(colors.HexColor("#b7d2da"))
-    canvas.line(1.3 * cm, 0.8 * cm, largura - 1.3 * cm, 0.8 * cm)
-
-    canvas.setFont("Helvetica", 8)
-    canvas.setFillColor(colors.HexColor("#54717b"))
-    canvas.drawString(
-        1.3 * cm,
-        0.45 * cm,
-        "CTR DEFENSE — Relatório confidencial",
-    )
-    canvas.drawRightString(
-        largura - 1.3 * cm,
-        0.45 * cm,
-        f"Página {documento.page}",
-    )
-    canvas.restoreState()
-
-
-def gerar_pdf_executivo(organizacao, consultor):
-    dados = organizacao["dados"]
-    riscos = dados["riscos"]
-    acoes = dados["acoes"]
     resultados = calcular_assessment(dados)
-    recomendacoes = obter_recomendacoes(dados)
-    score = obter_score_geral(dados)
-    classificacao = classificar_maturidade(score)
 
-    riscos_criticos = (
-        int((riscos["Nível"] == "Crítico").sum())
-        if not riscos.empty
-        else 0
+    buffer.write("MATURIDADE NIST CSF 2.0\n")
+    buffer.write("Dimensao;Pontuacao;Nivel\n")
+
+    for dimensao in DIMENSOES:
+        pontuacao = resultados[dimensao]
+        buffer.write(
+            f"{dimensao};{pontuacao:.2f};"
+            f"{classificar_maturidade(pontuacao)}\n"
+        )
+
+    buffer.write(
+        f"Geral;{resultados['Geral']:.2f};"
+        f"{classificar_maturidade(resultados['Geral'])}\n\n"
     )
 
-    acoes_concluidas = (
-        int((acoes["Status"] == "Concluído").sum())
-        if not acoes.empty
-        else 0
-    )
+    secoes = [
+        ("RISCOS", dados["riscos"], COLUNAS_RISCOS),
+        ("PLANO DE ACAO", dados["acoes"], COLUNAS_ACOES),
+        ("REUNIOES", dados["reunioes"], COLUNAS_REUNIOES),
+    ]
+
+    for titulo, registros, colunas in secoes:
+        buffer.write(f"{titulo}\n")
+        df = dataframe_lista(registros, colunas)
+        buffer.write(df.to_csv(index=False, sep=";"))
+        buffer.write("\n")
+
+    buffer.write("COMPLIANCE\n")
+    buffer.write("Controle;Percentual\n")
+
+    for chave, valor in dados["compliance"].items():
+        buffer.write(f"{chave};{valor}\n")
+
+    return buffer.getvalue().encode("utf-8-sig")
+
+
+def gerar_pdf(organizacao, dados):
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_CENTER
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import cm
+        from reportlab.platypus import (
+            PageBreak,
+            Paragraph,
+            SimpleDocTemplate,
+            Spacer,
+            Table,
+            TableStyle,
+        )
+    except ImportError:
+        return None
 
     buffer = io.BytesIO()
-
     documento = SimpleDocTemplate(
         buffer,
         pagesize=landscape(A4),
-        rightMargin=1.3 * cm,
-        leftMargin=1.3 * cm,
+        rightMargin=1.2 * cm,
+        leftMargin=1.2 * cm,
         topMargin=1.2 * cm,
         bottomMargin=1.2 * cm,
-        title="Relatório Executivo CTR DEFENSE",
-        author="CTR DEFENSE",
     )
 
     estilos = getSampleStyleSheet()
-
-    titulo = ParagraphStyle(
-        "TituloCTR",
-        parent=estilos["Title"],
-        alignment=TA_CENTER,
-        textColor=colors.HexColor("#102f3b"),
-        fontSize=23,
-        leading=28,
-        spaceAfter=12,
-    )
-
-    subtitulo = ParagraphStyle(
-        "SubtituloCTR",
-        parent=estilos["Heading2"],
-        textColor=colors.HexColor("#047f9e"),
-        fontSize=15,
-        leading=18,
-        spaceBefore=10,
-        spaceAfter=8,
-    )
-
-    normal = ParagraphStyle(
-        "NormalCTR",
-        parent=estilos["BodyText"],
-        fontSize=8.5,
-        leading=11,
-        alignment=TA_JUSTIFY,
-        textColor=colors.HexColor("#263238"),
+    estilos.add(
+        ParagraphStyle(
+            name="TituloCTR",
+            parent=estilos["Title"],
+            textColor=colors.HexColor("#0b3040"),
+            alignment=TA_CENTER,
+            fontSize=23,
+            leading=28,
+        )
     )
 
     elementos = [
-        Spacer(1, 0.8 * cm),
-        Paragraph("CTR DEFENSE", titulo),
-        Paragraph("Relatório Executivo de Cibersegurança", subtitulo),
-        Spacer(1, 0.3 * cm),
-    ]
-
-    dados_capa = [
-        ["Organização", sanitizar_texto(organizacao["razao_social"])],
-        ["Nome fantasia", sanitizar_texto(organizacao["nome_fantasia"])],
-        ["Documento", sanitizar_texto(organizacao["documento"] or "Não informado")],
-        ["Setor e porte", f"{organizacao['setor']} — {organizacao['porte']}"],
-        ["Responsável", sanitizar_texto(organizacao["responsavel"] or "Não informado")],
-        ["Consultor", sanitizar_texto(consultor or "CTR DEFENSE")],
-        ["Emissão", datetime.now().strftime("%d/%m/%Y %H:%M")],
-    ]
-
-    tabela_capa = Table(
-        dados_capa,
-        colWidths=[5.4 * cm, 17.5 * cm],
-    )
-    tabela_capa.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#102f3b")),
-                ("TEXTCOLOR", (0, 0), (0, -1), colors.white),
-                ("BACKGROUND", (1, 0), (1, -1), colors.HexColor("#edf6f8")),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#9fbfc8")),
-                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("PADDING", (0, 0), (-1, -1), 8),
-            ]
-        )
-    )
-    elementos.append(tabela_capa)
-    elementos.append(Spacer(1, 0.6 * cm))
-
-    indicadores = Table(
-        [
-            [
-                "Maturidade geral",
-                "Classificação",
-                "Riscos críticos",
-                "Ações concluídas",
-            ],
-            [
-                f"{score}%",
-                classificacao,
-                str(riscos_criticos),
-                f"{acoes_concluidas}/{len(acoes)}",
-            ],
-        ],
-        colWidths=[5.7 * cm] * 4,
-    )
-    indicadores.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#047f9e")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("BACKGROUND", (0, 1), (-1, 1), colors.HexColor("#f4fafc")),
-                ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 1), (-1, 1), 14),
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#9fbfc8")),
-                ("PADDING", (0, 0), (-1, -1), 9),
-            ]
-        )
-    )
-    elementos.extend([indicadores, PageBreak()])
-
-    elementos.append(Paragraph("Resumo executivo", subtitulo))
-    elementos.append(
+        Paragraph("CTR DEFENSE", estilos["TituloCTR"]),
         Paragraph(
-            (
-                f"A organização apresenta maturidade geral de <b>{score}%</b>, "
-                f"classificada como <b>{classificacao}</b>. Foram registrados "
-                f"<b>{len(riscos)} riscos</b>, sendo <b>{riscos_criticos}</b> "
-                f"críticos. O plano de ação possui <b>{len(acoes)} iniciativas</b>, "
-                f"com <b>{acoes_concluidas}</b> concluídas."
-            ),
-            normal,
+            "Relatório Executivo de Cibersegurança",
+            estilos["Heading2"],
+        ),
+        Spacer(1, 0.5 * cm),
+        Paragraph(
+            f"<b>Organização:</b> {organizacao['nome']}",
+            estilos["BodyText"],
+        ),
+        Paragraph(
+            f"<b>Segmento:</b> {organizacao.get('segmento', '-')}",
+            estilos["BodyText"],
+        ),
+        Paragraph(
+            f"<b>Responsável:</b> "
+            f"{organizacao.get('responsavel', '-')}",
+            estilos["BodyText"],
+        ),
+        Paragraph(
+            f"<b>Emissão:</b> "
+            f"{datetime.now().strftime('%d/%m/%Y %H:%M')}",
+            estilos["BodyText"],
+        ),
+        Spacer(1, 0.7 * cm),
+    ]
+
+    resultados = calcular_assessment(dados)
+    elementos.append(Paragraph("Maturidade NIST CSF 2.0", estilos["Heading2"]))
+
+    tabela_maturidade = [["Dimensão", "Pontuação", "Nível"]]
+
+    for dimensao in DIMENSOES:
+        pontuacao = resultados[dimensao]
+        tabela_maturidade.append(
+            [
+                dimensao,
+                f"{pontuacao:.2f}/5",
+                classificar_maturidade(pontuacao),
+            ]
         )
-    )
-    elementos.append(Spacer(1, 0.3 * cm))
 
-    radar = Image(
-        grafico_radar_pdf(resultados),
-        width=11.5 * cm,
-        height=8.2 * cm,
-    )
-    barras = Image(
-        grafico_barras_pdf(resultados),
-        width=11.5 * cm,
-        height=7.4 * cm,
-    )
-
-    elementos.append(
-        Table(
-            [[radar, barras]],
-            colWidths=[12.2 * cm, 12.2 * cm],
-            style=TableStyle(
-                [
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ]
-            ),
-        )
-    )
-
-    elementos.extend(
+    tabela_maturidade.append(
         [
-            PageBreak(),
-            Paragraph("Distribuição e priorização dos riscos", subtitulo),
-            Image(
-                grafico_pizza_pdf(riscos),
-                width=12.3 * cm,
-                height=8.3 * cm,
-            ),
-            Paragraph("Recomendações prioritárias", subtitulo),
+            "Geral",
+            f"{resultados['Geral']:.2f}/5",
+            classificar_maturidade(resultados["Geral"]),
         ]
     )
 
-    if recomendacoes:
-        linhas = [["Dimensão", "Nota", "Recomendação"]]
+    tabela = Table(
+        tabela_maturidade,
+        colWidths=[8 * cm, 4 * cm, 6 * cm],
+    )
+    tabela.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0b3040")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#dceff4")),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#a8c3cc")),
+                ("ALIGN", (1, 1), (1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 1), (-1, -1), 6),
+            ]
+        )
+    )
 
-        for item in recomendacoes:
-            linhas.append(
+    elementos.extend([tabela, Spacer(1, 0.7 * cm)])
+    elementos.append(Paragraph("Registro de Riscos", estilos["Heading2"]))
+
+    if dados["riscos"]:
+        tabela_riscos = [
+            ["ID", "Risco", "Prob.", "Impacto", "Nível", "Status"]
+        ]
+
+        for risco in dados["riscos"]:
+            tabela_riscos.append(
                 [
-                    item["Dimensão"],
-                    f"{item['Maturidade']:.2f}",
+                    str(risco.get("ID", "")),
                     Paragraph(
-                        sanitizar_texto(item["Recomendação"]),
-                        normal,
+                        str(risco.get("Risco", "")),
+                        estilos["BodyText"],
                     ),
+                    str(risco.get("Probabilidade", "")),
+                    str(risco.get("Impacto", "")),
+                    str(risco.get("Nível", "")),
+                    str(risco.get("Status", "")),
                 ]
             )
 
         tabela = Table(
-            linhas,
-            colWidths=[4 * cm, 2.5 * cm, 17.2 * cm],
+            tabela_riscos,
+            colWidths=[
+                1.2 * cm,
+                11 * cm,
+                2 * cm,
+                2 * cm,
+                2.5 * cm,
+                3 * cm,
+            ],
             repeatRows=1,
         )
         tabela.setStyle(
             TableStyle(
                 [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#102f3b")),
+                    (
+                        "BACKGROUND",
+                        (0, 0),
+                        (-1, 0),
+                        colors.HexColor("#0b3040"),
+                    ),
                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [
-                        colors.white,
-                        colors.HexColor("#edf6f8"),
-                    ]),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#9fbfc8")),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                     ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("PADDING", (0, 0), (-1, -1), 6),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 5),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
                 ]
             )
         )
@@ -971,528 +669,336 @@ def gerar_pdf_executivo(organizacao, consultor):
     else:
         elementos.append(
             Paragraph(
-                "Nenhuma dimensão abaixo do nível mínimo recomendado.",
-                normal,
+                "Nenhum risco registrado.",
+                estilos["BodyText"],
             )
         )
 
-    elementos.extend(
-        [
-            PageBreak(),
-            Paragraph("Registro de riscos", subtitulo),
-        ]
-    )
+    elementos.append(PageBreak())
+    elementos.append(Paragraph("Plano de Ação", estilos["Heading2"]))
 
-    if riscos.empty:
-        elementos.append(Paragraph("Nenhum risco cadastrado.", normal))
-    else:
-        colunas = [
-            "ID",
-            "Risco",
-            "Probabilidade",
-            "Impacto",
-            "Nível",
-            "Responsável",
-            "Status",
+    if dados["acoes"]:
+        tabela_acoes = [
+            ["ID", "Ação", "Prioridade", "Responsável", "Prazo", "Status"]
         ]
-        linhas = [colunas]
 
-        for _, linha in riscos[colunas].iterrows():
-            linhas.append(
+        for acao in dados["acoes"]:
+            tabela_acoes.append(
                 [
-                    sanitizar_texto(linha["ID"]),
-                    Paragraph(sanitizar_texto(linha["Risco"]), normal),
-                    sanitizar_texto(linha["Probabilidade"]),
-                    sanitizar_texto(linha["Impacto"]),
-                    sanitizar_texto(linha["Nível"]),
-                    sanitizar_texto(linha["Responsável"]),
-                    sanitizar_texto(linha["Status"]),
+                    str(acao.get("ID", "")),
+                    Paragraph(
+                        str(acao.get("Ação", "")),
+                        estilos["BodyText"],
+                    ),
+                    str(acao.get("Prioridade", "")),
+                    str(acao.get("Responsável", "")),
+                    str(acao.get("Prazo", "")),
+                    str(acao.get("Status", "")),
                 ]
             )
 
         tabela = Table(
-            linhas,
-            repeatRows=1,
+            tabela_acoes,
             colWidths=[
-                1.1 * cm,
-                7.4 * cm,
-                2.7 * cm,
-                2.3 * cm,
-                2.2 * cm,
-                4.2 * cm,
-                3 * cm,
-            ],
-        )
-        tabela.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#047f9e")),
-                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [
-                        colors.white,
-                        colors.HexColor("#edf6f8"),
-                    ]),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#9fbfc8")),
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("PADDING", (0, 0), (-1, -1), 5),
-                ]
-            )
-        )
-        elementos.append(tabela)
-
-    elementos.append(Paragraph("Plano de ação", subtitulo))
-
-    if acoes.empty:
-        elementos.append(Paragraph("Nenhuma ação cadastrada.", normal))
-    else:
-        colunas = [
-            "ID",
-            "Ação",
-            "Prioridade",
-            "Responsável",
-            "Prazo",
-            "Status",
-            "Progresso",
-        ]
-        linhas = [colunas]
-
-        for _, linha in acoes[colunas].iterrows():
-            linhas.append(
-                [
-                    sanitizar_texto(linha["ID"]),
-                    Paragraph(sanitizar_texto(linha["Ação"]), normal),
-                    sanitizar_texto(linha["Prioridade"]),
-                    sanitizar_texto(linha["Responsável"]),
-                    sanitizar_texto(linha["Prazo"]),
-                    sanitizar_texto(linha["Status"]),
-                    f"{linha['Progresso']}%",
-                ]
-            )
-
-        tabela = Table(
-            linhas,
-            repeatRows=1,
-            colWidths=[
-                1.1 * cm,
-                7.5 * cm,
+                1.2 * cm,
+                10 * cm,
                 2.5 * cm,
                 4 * cm,
-                2.8 * cm,
-                3.2 * cm,
-                2.2 * cm,
+                3 * cm,
+                3.5 * cm,
             ],
+            repeatRows=1,
         )
         tabela.setStyle(
             TableStyle(
                 [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#102f3b")),
+                    (
+                        "BACKGROUND",
+                        (0, 0),
+                        (-1, 0),
+                        colors.HexColor("#0b3040"),
+                    ),
                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [
-                        colors.white,
-                        colors.HexColor("#edf6f8"),
-                    ]),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#9fbfc8")),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                     ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("PADDING", (0, 0), (-1, -1), 5),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 5),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
                 ]
             )
         )
         elementos.append(tabela)
-
-    documento.build(
-        elementos,
-        onFirstPage=adicionar_rodape_pdf,
-        onLaterPages=adicionar_rodape_pdf,
-    )
-
-    buffer.seek(0)
-    return buffer.getvalue()
-
-
-# ============================================================
-# SIDEBAR
-# ============================================================
-
-with st.sidebar:
-    st.markdown("## 🛡️ CTR DEFENSE")
-    st.caption("Plataforma de Consultoria Profissional")
-
-    organizacoes = st.session_state.organizacoes
-
-    if organizacoes:
-        ids = list(organizacoes.keys())
-
-        if st.session_state.organizacao_ativa not in ids:
-            st.session_state.organizacao_ativa = ids[0]
-
-        selecionada = st.selectbox(
-            "Organização ativa",
-            options=ids,
-            index=ids.index(st.session_state.organizacao_ativa),
-            format_func=lambda identificador: organizacoes[
-                identificador
-            ]["nome_fantasia"],
+    else:
+        elementos.append(
+            Paragraph(
+                "Nenhuma ação registrada.",
+                estilos["BodyText"],
+            )
         )
 
-        if selecionada != st.session_state.organizacao_ativa:
-            st.session_state.organizacao_ativa = selecionada
-            st.rerun()
-    else:
-        st.info("Cadastre a primeira organização.")
-
-    st.text_input(
-        "Consultor responsável",
-        key="consultor",
-        placeholder="Nome do consultor",
-    )
-
-    menu = st.radio(
-        "Módulos",
-        [
-            "Organizações",
-            "Dashboard Executivo",
-            "Assessment NIST CSF",
-            "Vulnerabilidades",
-            "Matriz de Riscos",
-            "Plano de Ação",
-            "Compliance",
-            "Reuniões",
-            "Relatórios",
-        ],
-    )
-
-    st.markdown("---")
-    st.caption("CTR DEFENSE © 2026")
-    st.caption("Versão Pro 2.0")
+    documento.build(elementos)
+    buffer.seek(0)
+    return buffer.getvalue()
 
 
 # ============================================================
 # ORGANIZAÇÕES
 # ============================================================
 
-if menu == "Organizações":
+
+def modulo_organizacoes():
     cabecalho(
-        "Gestão de Organizações",
-        "Cadastre e administre os clientes atendidos pela CTR DEFENSE.",
+        "Organizações",
+        "Cadastre e gerencie os clientes atendidos pela CTR DEFENSE.",
     )
 
-    with st.expander("Cadastrar nova organização", expanded=True):
-        with st.form("form_organizacao", clear_on_submit=True):
-            col1, col2 = st.columns(2)
-            razao_social = col1.text_input("Razão social *")
-            nome_fantasia = col2.text_input("Nome fantasia")
+    with st.form("form_nova_organizacao", clear_on_submit=True):
+        st.subheader("Cadastrar organização")
 
-            col3, col4 = st.columns(2)
-            documento = col3.text_input("CNPJ ou documento")
-            setor = col4.selectbox(
-                "Setor",
-                [
-                    "Tecnologia",
-                    "Saúde",
-                    "Financeiro",
-                    "Indústria",
-                    "Varejo",
-                    "Educação",
-                    "Governo",
-                    "Serviços",
-                    "Outro",
-                ],
-            )
+        col1, col2 = st.columns(2)
 
-            col5, col6 = st.columns(2)
-            porte = col5.selectbox(
-                "Porte",
-                ["Microempresa", "Pequena", "Média", "Grande"],
-            )
-            responsavel = col6.text_input("Responsável no cliente")
-            email = st.text_input("E-mail do responsável")
+        nome = col1.text_input("Nome da organização")
+        segmento = col2.text_input("Segmento")
 
-            if st.form_submit_button(
-                "Cadastrar organização",
-                type="primary",
-            ):
-                if not razao_social.strip():
-                    st.error("Informe a razão social.")
-                else:
-                    cadastrar_organizacao(
-                        razao_social,
-                        nome_fantasia,
-                        documento,
-                        setor,
-                        porte,
-                        responsavel,
-                        email,
-                    )
-                    st.success("Organização cadastrada.")
-                    st.rerun()
+        col3, col4 = st.columns(2)
+
+        responsavel = col3.text_input("Responsável")
+        email = col4.text_input("E-mail")
+
+        cadastrar = st.form_submit_button(
+            "Cadastrar organização",
+            type="primary",
+            use_container_width=True,
+        )
+
+        if cadastrar:
+            nome_limpo = nome.strip()
+
+            if not nome_limpo:
+                st.error("Informe o nome da organização.")
+            else:
+                base_id = normalizar_id(nome_limpo)
+                organizacao_id = base_id
+                contador = 2
+
+                while organizacao_id in st.session_state.organizacoes:
+                    organizacao_id = f"{base_id}-{contador}"
+                    contador += 1
+
+                st.session_state.organizacoes[organizacao_id] = {
+                    "id": organizacao_id,
+                    "nome": nome_limpo,
+                    "segmento": segmento.strip(),
+                    "responsavel": responsavel.strip(),
+                    "email": email.strip(),
+                    "criado_em": datetime.now().isoformat(),
+                    "dados": criar_dados_organizacao(),
+                }
+
+                st.session_state.organizacao_ativa_id = organizacao_id
+                st.success("Organização cadastrada com sucesso.")
+                st.rerun()
 
     st.subheader("Organizações cadastradas")
 
-    if not organizacoes:
-        st.info("Nenhuma organização cadastrada.")
-    else:
-        for organizacao_id, organizacao in list(organizacoes.items()):
-            dados_org = organizacao["dados"]
-            score = obter_score_geral(dados_org)
+    if not st.session_state.organizacoes:
+        st.info("Nenhuma organização foi cadastrada.")
+        return
 
-            with st.container(border=True):
-                col_info, col_metricas, col_acoes = st.columns([3, 2, 1])
+    for organizacao_id, organizacao in list(
+        st.session_state.organizacoes.items()
+    ):
+        ativa = (
+            organizacao_id
+            == st.session_state.get("organizacao_ativa_id")
+        )
 
-                with col_info:
-                    st.markdown(f"### {organizacao['nome_fantasia']}")
-                    st.write(f"**Razão social:** {organizacao['razao_social']}")
-                    st.write(
-                        f"**Setor:** {organizacao['setor']} | "
-                        f"**Porte:** {organizacao['porte']}"
-                    )
-                    st.write(
-                        f"**Responsável:** "
-                        f"{organizacao['responsavel'] or 'Não informado'}"
-                    )
+        with st.expander(
+            f"{'✅ ' if ativa else ''}{organizacao['nome']}",
+            expanded=ativa,
+        ):
+            col1, col2, col3 = st.columns([2, 2, 1])
 
-                with col_metricas:
-                    st.metric("Maturidade", f"{score}%")
-                    st.caption(classificar_maturidade(score))
-                    st.caption(
-                        f"{len(dados_org['riscos'])} riscos | "
-                        f"{len(dados_org['acoes'])} ações"
-                    )
+            col1.write(
+                f"**Segmento:** "
+                f"{organizacao.get('segmento') or 'Não informado'}"
+            )
+            col1.write(
+                f"**Responsável:** "
+                f"{organizacao.get('responsavel') or 'Não informado'}"
+            )
+            col2.write(
+                f"**E-mail:** "
+                f"{organizacao.get('email') or 'Não informado'}"
+            )
+            col2.write(f"**ID:** `{organizacao_id}`")
 
-                with col_acoes:
-                    if st.button(
-                        "Selecionar",
-                        key=f"selecionar_{organizacao_id}",
-                        use_container_width=True,
-                    ):
-                        st.session_state.organizacao_ativa = organizacao_id
-                        st.rerun()
+            if col3.button(
+                "Selecionar",
+                key=f"selecionar_{organizacao_id}",
+                use_container_width=True,
+            ):
+                st.session_state.organizacao_ativa_id = organizacao_id
+                st.rerun()
 
-                    if st.button(
-                        "Excluir",
-                        key=f"excluir_{organizacao_id}",
-                        use_container_width=True,
-                    ):
-                        excluir_organizacao(organizacao_id)
-                        st.rerun()
+            if col3.button(
+                "Excluir",
+                key=f"excluir_{organizacao_id}",
+                use_container_width=True,
+            ):
+                del st.session_state.organizacoes[organizacao_id]
 
+                if (
+                    st.session_state.get("organizacao_ativa_id")
+                    == organizacao_id
+                ):
+                    st.session_state.organizacao_ativa_id = None
 
-# ============================================================
-# PROTEÇÃO SEM ORGANIZAÇÃO
-# ============================================================
-
-elif obter_organizacao_ativa() is None:
-    cabecalho(
-        "Nenhuma organização selecionada",
-        "Cadastre uma organização para utilizar os módulos da plataforma.",
-    )
-    st.warning("Acesse o módulo Organizações e cadastre o primeiro cliente.")
+                st.rerun()
 
 
 # ============================================================
 # DASHBOARD
 # ============================================================
 
-elif menu == "Dashboard Executivo":
+
+def modulo_dashboard():
     organizacao = obter_organizacao_ativa()
     dados = obter_dados_ativos()
-    riscos = dados["riscos"]
-    acoes = dados["acoes"]
-    resultados = calcular_assessment(dados)
+
+    if organizacao is None or dados is None:
+        st.warning("Cadastre ou selecione uma organização.")
+        return
 
     cabecalho(
-        "Dashboard Executivo",
-        "Visão consolidada da postura de segurança e das prioridades.",
+        f"Dashboard Executivo — {organizacao['nome']}",
+        "Visão consolidada da maturidade, riscos e plano de ação.",
     )
 
-    st.markdown(
-        f"""
-        <div class="organization-card">
-            <strong>Organização ativa:</strong>
-            {organizacao["nome_fantasia"]}<br>
-            {organizacao["setor"]} • {organizacao["porte"]} •
-            Responsável: {organizacao["responsavel"] or "Não informado"}
-        </div>
-        """,
-        unsafe_allow_html=True,
+    resultados = calcular_assessment(dados)
+    riscos_criticos = sum(
+        1
+        for risco in dados["riscos"]
+        if risco.get("Nível") == "Crítico"
+        and risco.get("Status") != "Encerrado"
     )
+    acoes_concluidas = sum(
+        1
+        for acao in dados["acoes"]
+        if acao.get("Status") == "Concluída"
+    )
+    total_acoes = len(dados["acoes"])
 
-    score = obter_score_geral(dados)
-    riscos_criticos = (
-        int((riscos["Nível"] == "Crítico").sum())
-        if not riscos.empty
-        else 0
-    )
-    riscos_altos = (
-        int((riscos["Nível"] == "Alto").sum())
-        if not riscos.empty
-        else 0
-    )
-    concluidas = (
-        int((acoes["Status"] == "Concluído").sum())
-        if not acoes.empty
-        else 0
-    )
+    col1, col2, col3, col4 = st.columns(4)
 
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("Maturidade geral", f"{score}%")
-    col2.metric("Classificação", classificar_maturidade(score))
+    col1.metric(
+        "Maturidade geral",
+        f"{resultados['Geral']:.2f}/5",
+        classificar_maturidade(resultados["Geral"]),
+    )
+    col2.metric("Riscos registrados", len(dados["riscos"]))
     col3.metric("Riscos críticos", riscos_criticos)
-    col4.metric("Riscos altos", riscos_altos)
-    col5.metric("Ações concluídas", f"{concluidas}/{len(acoes)}")
+    col4.metric(
+        "Ações concluídas",
+        f"{acoes_concluidas}/{total_acoes}",
+    )
 
-    grafico1, grafico2 = st.columns(2)
+    col_grafico1, col_grafico2 = st.columns(2)
 
-    with grafico1:
-        st.subheader("Radar de maturidade")
+    with col_grafico1:
+        radar = go.Figure()
 
-        dimensoes = list(resultados.keys())
-        valores = list(resultados.values())
-
-        figura = go.Figure(
+        radar.add_trace(
             go.Scatterpolar(
-                r=valores + [valores[0]],
-                theta=dimensoes + [dimensoes[0]],
+                r=[resultados[d] for d in DIMENSOES],
+                theta=DIMENSOES,
                 fill="toself",
-                line=dict(color="#0787a6", width=3),
-                fillcolor="rgba(7,135,166,0.28)",
+                name="Maturidade",
+                line_color="#047f9e",
             )
         )
-        figura.update_layout(
-            polar=dict(
-                bgcolor="rgba(255,255,255,0.48)",
-                radialaxis=dict(visible=True, range=[0, 5]),
-            ),
+
+        radar.update_layout(
+            title="Radar NIST CSF 2.0",
+            polar=dict(radialaxis=dict(visible=True, range=[0, 5])),
             showlegend=False,
-            paper_bgcolor="rgba(0,0,0,0)",
-            margin=dict(l=40, r=40, t=35, b=35),
+            height=430,
+            paper_bgcolor="rgba(255,255,255,0)",
         )
-        st.plotly_chart(figura, use_container_width=True)
 
-    with grafico2:
-        st.subheader("Maturidade por dimensão")
+        st.plotly_chart(radar, use_container_width=True)
 
+    with col_grafico2:
         df_maturidade = pd.DataFrame(
             {
-                "Dimensão": list(resultados.keys()),
-                "Maturidade": list(resultados.values()),
+                "Dimensão": DIMENSOES,
+                "Pontuação": [resultados[d] for d in DIMENSOES],
             }
         )
 
-        figura = px.bar(
+        barras = px.bar(
             df_maturidade,
-            x="Maturidade",
-            y="Dimensão",
-            orientation="h",
-            color="Maturidade",
-            color_continuous_scale=[
-                "#c62828",
-                "#f9a825",
-                "#0787a6",
-                "#2e7d32",
-            ],
-            text_auto=".2f",
-            range_x=[0, 5],
+            x="Dimensão",
+            y="Pontuação",
+            range_y=[0, 5],
+            color="Pontuação",
+            color_continuous_scale=["#d9eef3", "#047f9e", "#0b3040"],
+            title="Maturidade por dimensão",
         )
-        figura.update_layout(
+        barras.update_layout(
             coloraxis_showscale=False,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(255,255,255,0.45)",
-            yaxis=dict(autorange="reversed"),
+            height=430,
+            paper_bgcolor="rgba(255,255,255,0)",
         )
-        st.plotly_chart(figura, use_container_width=True)
 
-    grafico3, grafico4 = st.columns(2)
+        st.plotly_chart(barras, use_container_width=True)
 
-    with grafico3:
-        st.subheader("Distribuição dos riscos")
+    st.subheader("Distribuição de riscos")
 
-        if riscos.empty:
-            st.info("Cadastre riscos para visualizar a distribuição.")
-        else:
-            distribuicao = (
-                riscos["Nível"]
-                .value_counts()
-                .reset_index()
+    if dados["riscos"]:
+        contagem = (
+            pd.DataFrame(dados["riscos"])["Nível"]
+            .value_counts()
+            .reindex(
+                ["Crítico", "Alto", "Médio", "Baixo"],
+                fill_value=0,
             )
-            distribuicao.columns = ["Nível", "Quantidade"]
+            .reset_index()
+        )
+        contagem.columns = ["Nível", "Quantidade"]
 
-            figura = px.pie(
-                distribuicao,
-                names="Nível",
-                values="Quantidade",
-                hole=0.46,
-                color="Nível",
-                color_discrete_map={
-                    "Crítico": "#c62828",
-                    "Alto": "#ef6c00",
-                    "Médio": "#f9a825",
-                    "Baixo": "#2e7d32",
-                },
-            )
-            figura.update_traces(
-                textposition="inside",
-                textinfo="percent+label",
-            )
-            figura.update_layout(paper_bgcolor="rgba(0,0,0,0)")
-            st.plotly_chart(figura, use_container_width=True)
-
-    with grafico4:
-        st.subheader("Situação do plano de ação")
-
-        if acoes.empty:
-            st.info("Cadastre ações para visualizar o andamento.")
-        else:
-            status = acoes["Status"].value_counts().reset_index()
-            status.columns = ["Status", "Quantidade"]
-
-            figura = px.bar(
-                status,
-                x="Status",
-                y="Quantidade",
-                color="Status",
-                text_auto=True,
-                color_discrete_map={
-                    "Não iniciado": "#78909c",
-                    "Em andamento": "#0787a6",
-                    "Bloqueado": "#c62828",
-                    "Concluído": "#2e7d32",
-                },
-            )
-            figura.update_layout(
-                showlegend=False,
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(255,255,255,0.45)",
-            )
-            st.plotly_chart(figura, use_container_width=True)
-
-    st.subheader("Prioridades recomendadas")
-
-    recomendacoes = obter_recomendacoes(dados)
-
-    if recomendacoes:
-        for item in recomendacoes[:3]:
-            st.markdown(
-                f"""
-                <div class="warning-box">
-                    <strong>{item["Dimensão"]} —
-                    nota {item["Maturidade"]}/5</strong><br>
-                    {item["Recomendação"]}
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        pizza = px.pie(
+            contagem,
+            names="Nível",
+            values="Quantidade",
+            color="Nível",
+            color_discrete_map={
+                "Crítico": "#b91c1c",
+                "Alto": "#ea580c",
+                "Médio": "#eab308",
+                "Baixo": "#16a34a",
+            },
+            hole=0.45,
+        )
+        st.plotly_chart(pizza, use_container_width=True)
     else:
-        st.success("Nenhuma dimensão abaixo do nível mínimo recomendado.")
+        st.info("Nenhum risco registrado.")
 
 
 # ============================================================
 # ASSESSMENT
 # ============================================================
 
-elif menu == "Assessment NIST CSF":
+
+def modulo_assessment():
+    # Correção do NameError: contexto obtido no início do módulo.
+    organizacao = obter_organizacao_ativa()
     dados = obter_dados_ativos()
+
+    if organizacao is None or dados is None:
+        st.error("Nenhuma organização ativa foi encontrada.")
+        return
+
     assessment = dados["assessment"]
 
     cabecalho(
@@ -1501,7 +1007,13 @@ elif menu == "Assessment NIST CSF":
     )
 
     total = sum(len(perguntas) for perguntas in PERGUNTAS_NIST.values())
-    preenchidas = len(assessment)
+
+    preenchidas = sum(
+        1
+        for dimensao in DIMENSOES
+        for indice, _ in enumerate(PERGUNTAS_NIST[dimensao])
+        if f"{dimensao}_{indice}" in assessment
+    )
 
     st.write(f"Progresso: **{preenchidas}/{total} respostas**")
     st.progress(min(preenchidas / total, 1.0))
@@ -1510,515 +1022,794 @@ elif menu == "Assessment NIST CSF":
 
     for aba, dimensao in zip(abas, DIMENSOES):
         with aba:
-            for indice, pergunta in enumerate(PERGUNTAS_NIST[dimensao]):
+            for indice, pergunta in enumerate(
+                PERGUNTAS_NIST[dimensao]
+            ):
                 chave = f"{dimensao}_{indice}"
-                atual = assessment.get(chave, "Não implementado")
+                resposta_atual = assessment.get(
+                    chave,
+                    "Não implementado",
+                )
+
+                if resposta_atual not in OPCOES_MATURIDADE:
+                    resposta_atual = "Não implementado"
 
                 st.markdown(
-                    f'<div class="question-card"><strong>'
-                    f'{indice + 1}. {pergunta}</strong></div>',
+                    (
+                        '<div class="question-card">'
+                        f"<strong>{indice + 1}. {pergunta}</strong>"
+                        "</div>"
+                    ),
                     unsafe_allow_html=True,
                 )
 
-                assessment[chave] = st.selectbox(
+                opcoes = list(OPCOES_MATURIDADE.keys())
+
+                resposta = st.selectbox(
                     "Nível de implementação",
-                    list(OPCOES_MATURIDADE.keys()),
-                    index=list(OPCOES_MATURIDADE.keys()).index(atual),
-                    key=f"assessment_{organizacao['id']}_{chave}",
+                    options=opcoes,
+                    index=opcoes.index(resposta_atual),
+                    key=(
+                        f"assessment_"
+                        f"{organizacao['id']}_"
+                        f"{chave}"
+                    ),
                 )
+
+                assessment[chave] = resposta
+
+    st.subheader("Resultado atual")
 
     resultados = calcular_assessment(dados)
     colunas = st.columns(6)
 
     for coluna, dimensao in zip(colunas, DIMENSOES):
-        coluna.metric(dimensao, f"{resultados[dimensao]:.2f}/5")
+        coluna.metric(
+            dimensao,
+            f"{resultados[dimensao]:.2f}/5",
+        )
 
-    if st.button("Limpar assessment"):
-        dados["assessment"] = {}
-        st.rerun()
-
-
-# ============================================================
-# VULNERABILIDADES
-# ============================================================
-
-elif menu == "Vulnerabilidades":
-    cabecalho(
-        "Gestão de Vulnerabilidades",
-        "Importe resultados em CSV de scanners ou planilhas internas.",
+    st.metric(
+        "Maturidade geral",
+        f"{resultados['Geral']:.2f}/5",
+        classificar_maturidade(resultados["Geral"]),
     )
 
-    arquivo = st.file_uploader("Importar arquivo CSV", type=["csv"])
+    if st.button(
+        "Limpar assessment",
+        key=f"limpar_assessment_{organizacao['id']}",
+    ):
+        dados["assessment"] = {}
+        prefixo = f"assessment_{organizacao['id']}_"
 
-    if arquivo:
-        try:
-            vulnerabilidades = pd.read_csv(arquivo)
-            st.success(f"{len(vulnerabilidades)} registros carregados.")
-            st.dataframe(vulnerabilidades, use_container_width=True)
+        chaves_para_remover = [
+            chave_estado
+            for chave_estado in list(st.session_state.keys())
+            if str(chave_estado).startswith(prefixo)
+        ]
 
-            coluna = st.selectbox(
-                "Coluna de severidade",
-                ["Não selecionar"] + vulnerabilidades.columns.tolist(),
-            )
+        for chave_estado in chaves_para_remover:
+            del st.session_state[chave_estado]
 
-            if coluna != "Não selecionar":
-                resumo = (
-                    vulnerabilidades[coluna]
-                    .astype(str)
-                    .value_counts()
-                    .reset_index()
-                )
-                resumo.columns = ["Severidade", "Quantidade"]
-
-                figura = px.bar(
-                    resumo,
-                    x="Severidade",
-                    y="Quantidade",
-                    color="Severidade",
-                    text_auto=True,
-                )
-                st.plotly_chart(figura, use_container_width=True)
-
-            st.download_button(
-                "Baixar CSV processado",
-                vulnerabilidades.to_csv(index=False).encode("utf-8-sig"),
-                "vulnerabilidades.csv",
-                "text/csv",
-            )
-        except Exception as erro:
-            st.error(f"Erro ao processar o arquivo: {erro}")
-    else:
-        st.info("Selecione um arquivo CSV para iniciar.")
+        st.rerun()
 
 
 # ============================================================
 # RISCOS
 # ============================================================
 
-elif menu == "Matriz de Riscos":
+
+def modulo_riscos():
+    organizacao = obter_organizacao_ativa()
     dados = obter_dados_ativos()
+
+    if organizacao is None or dados is None:
+        st.error("Nenhuma organização ativa foi encontrada.")
+        return
 
     cabecalho(
         "Matriz de Riscos",
-        "Registro e priorização por probabilidade e impacto.",
+        "Registre, classifique e acompanhe riscos cibernéticos.",
     )
 
-    with st.expander("Adicionar risco", expanded=True):
-        with st.form("form_risco", clear_on_submit=True):
-            risco = st.text_input("Descrição do risco")
+    with st.form(
+        f"form_risco_{organizacao['id']}",
+        clear_on_submit=True,
+    ):
+        risco = st.text_area("Descrição do risco", height=90)
 
-            col1, col2 = st.columns(2)
-            categoria = col1.selectbox(
-                "Categoria",
-                [
-                    "Cibernético",
-                    "Privacidade",
-                    "Operacional",
-                    "Terceiros",
-                    "Compliance",
-                    "Continuidade",
-                ],
-            )
-            responsavel = col2.text_input("Responsável")
+        col1, col2, col3 = st.columns(3)
 
-            col3, col4 = st.columns(2)
-            probabilidade = col3.slider("Probabilidade", 1, 5, 3)
-            impacto = col4.slider("Impacto", 1, 5, 3)
+        categoria = col1.selectbox(
+            "Categoria",
+            [
+                "Governança",
+                "Tecnologia",
+                "Pessoas",
+                "Processos",
+                "Terceiros",
+                "Privacidade",
+            ],
+        )
+        probabilidade = col2.slider("Probabilidade", 1, 5, 3)
+        impacto = col3.slider("Impacto", 1, 5, 3)
 
-            tratamento = st.selectbox(
-                "Tratamento",
-                ["Mitigar", "Evitar", "Transferir", "Aceitar"],
-            )
+        col4, col5, col6 = st.columns(3)
 
-            if st.form_submit_button("Adicionar risco", type="primary"):
-                if not risco.strip():
-                    st.error("Informe a descrição do risco.")
-                else:
-                    _, nivel = calcular_nivel_risco(
-                        probabilidade,
-                        impacto,
-                    )
+        tratamento = col4.selectbox(
+            "Tratamento",
+            ["Mitigar", "Evitar", "Transferir", "Aceitar"],
+        )
+        responsavel = col5.text_input("Responsável")
+        status = col6.selectbox(
+            "Status",
+            ["Ativo", "Em tratamento", "Monitorado", "Encerrado"],
+        )
 
-                    novo = pd.DataFrame(
-                        [
-                            {
-                                "ID": len(dados["riscos"]) + 1,
-                                "Risco": risco.strip(),
-                                "Categoria": categoria,
-                                "Probabilidade": probabilidade,
-                                "Impacto": impacto,
-                                "Nível": nivel,
-                                "Responsável": responsavel.strip(),
-                                "Tratamento": tratamento,
-                                "Status": "Ativo",
-                            }
-                        ]
-                    )
+        adicionar = st.form_submit_button(
+            "Adicionar risco",
+            type="primary",
+            use_container_width=True,
+        )
 
-                    dados["riscos"] = pd.concat(
-                        [dados["riscos"], novo],
-                        ignore_index=True,
-                    )
-                    st.rerun()
+        if adicionar:
+            if not risco.strip():
+                st.error("Descreva o risco.")
+            else:
+                nivel = classificar_risco(
+                    probabilidade,
+                    impacto,
+                )
 
-    riscos = dados["riscos"]
+                dados["riscos"].append(
+                    {
+                        "ID": proximo_id(dados["riscos"]),
+                        "Risco": risco.strip(),
+                        "Categoria": categoria,
+                        "Probabilidade": probabilidade,
+                        "Impacto": impacto,
+                        "Nível": nivel,
+                        "Tratamento": tratamento,
+                        "Responsável": responsavel.strip(),
+                        "Status": status,
+                    }
+                )
+                st.success("Risco registrado com sucesso.")
+                st.rerun()
 
-    if riscos.empty:
-        st.info("Nenhum risco cadastrado.")
-    else:
-        st.dataframe(riscos, use_container_width=True, hide_index=True)
+    df_riscos = dataframe_lista(
+        dados["riscos"],
+        COLUNAS_RISCOS,
+    )
+
+    st.subheader("Registro de riscos")
+    st.dataframe(
+        df_riscos,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    if dados["riscos"]:
+        st.subheader("Heatmap de riscos")
 
         matriz = pd.DataFrame(
             0,
-            index=[5, 4, 3, 2, 1],
+            index=[1, 2, 3, 4, 5],
             columns=[1, 2, 3, 4, 5],
         )
 
-        for _, linha in riscos.iterrows():
-            matriz.loc[
-                int(linha["Probabilidade"]),
-                int(linha["Impacto"]),
-            ] += 1
+        for item in dados["riscos"]:
+            prob = int(item["Probabilidade"])
+            impacto = int(item["Impacto"])
+            matriz.loc[prob, impacto] += 1
 
-        figura = go.Figure(
-            go.Heatmap(
-                z=[
-                    [5, 10, 15, 20, 25],
-                    [4, 8, 12, 16, 20],
-                    [3, 6, 9, 12, 15],
-                    [2, 4, 6, 8, 10],
-                    [1, 2, 3, 4, 5],
-                ],
-                x=[1, 2, 3, 4, 5],
-                y=[5, 4, 3, 2, 1],
-                text=matriz.astype(str).values,
-                texttemplate="Riscos: %{text}",
-                colorscale=[
-                    [0.00, "#43a047"],
-                    [0.24, "#8bc34a"],
-                    [0.25, "#fdd835"],
-                    [0.47, "#fdd835"],
-                    [0.48, "#fb8c00"],
-                    [0.79, "#fb8c00"],
-                    [0.80, "#c62828"],
-                    [1.00, "#c62828"],
-                ],
-                showscale=False,
+        heatmap = px.imshow(
+            matriz,
+            labels={
+                "x": "Impacto",
+                "y": "Probabilidade",
+                "color": "Quantidade",
+            },
+            x=[1, 2, 3, 4, 5],
+            y=[1, 2, 3, 4, 5],
+            text_auto=True,
+            color_continuous_scale=[
+                [0.0, "#dcfce7"],
+                [0.35, "#fef08a"],
+                [0.65, "#fb923c"],
+                [1.0, "#b91c1c"],
+            ],
+            aspect="auto",
+        )
+
+        st.plotly_chart(heatmap, use_container_width=True)
+
+        col1, col2 = st.columns([2, 1])
+
+        risco_id = col1.selectbox(
+            "Selecione o risco para exclusão",
+            options=[item["ID"] for item in dados["riscos"]],
+            format_func=lambda valor: next(
+                (
+                    f"#{item['ID']} — {item['Risco']}"
+                    for item in dados["riscos"]
+                    if item["ID"] == valor
+                ),
+                str(valor),
+            ),
+            key=f"risco_exclusao_{organizacao['id']}",
+        )
+
+        if col2.button(
+            "Excluir risco",
+            key=f"excluir_risco_{organizacao['id']}",
+            use_container_width=True,
+        ):
+            dados["riscos"] = remover_registro(
+                dados["riscos"],
+                risco_id,
             )
-        )
-        figura.update_layout(
-            xaxis_title="Impacto",
-            yaxis_title="Probabilidade",
-            height=500,
-        )
-        st.plotly_chart(figura, use_container_width=True)
-
-        col1, col2 = st.columns([3, 1])
-        col1.download_button(
-            "Exportar riscos",
-            riscos.to_csv(index=False).encode("utf-8-sig"),
-            "riscos.csv",
-            "text/csv",
-        )
-
-        if col2.button("Excluir todos"):
-            dados["riscos"] = dataframe_riscos()
             st.rerun()
+
+        st.download_button(
+            "Baixar riscos em CSV",
+            data=df_riscos.to_csv(
+                index=False,
+                sep=";",
+            ).encode("utf-8-sig"),
+            file_name=f"riscos-{organizacao['id']}.csv",
+            mime="text/csv",
+        )
 
 
 # ============================================================
 # PLANO DE AÇÃO
 # ============================================================
 
-elif menu == "Plano de Ação":
+
+def modulo_acoes():
+    organizacao = obter_organizacao_ativa()
     dados = obter_dados_ativos()
 
+    if organizacao is None or dados is None:
+        st.error("Nenhuma organização ativa foi encontrada.")
+        return
+
     cabecalho(
-        "Plano de Ação e Roadmap",
-        "Gerencie iniciativas de redução de riscos e conformidade.",
+        "Plano de Ação",
+        "Transforme os achados da consultoria em um roadmap executável.",
     )
 
-    with st.expander("Adicionar ação", expanded=True):
-        with st.form("form_acao", clear_on_submit=True):
-            acao = st.text_input("Ação recomendada")
+    with st.form(
+        f"form_acao_{organizacao['id']}",
+        clear_on_submit=True,
+    ):
+        acao = st.text_area("Descrição da ação", height=90)
 
-            col1, col2, col3 = st.columns(3)
-            origem = col1.selectbox(
-                "Origem",
-                [
-                    "Assessment",
-                    "Risco",
-                    "Vulnerabilidade",
-                    "Auditoria",
-                    "Compliance",
-                ],
-            )
-            prioridade = col2.selectbox(
-                "Prioridade",
-                ["Crítica", "Alta", "Média", "Baixa"],
-            )
-            responsavel = col3.text_input("Responsável")
+        col1, col2, col3 = st.columns(3)
 
-            col4, col5 = st.columns(2)
-            inicio = col4.date_input("Início", value=date.today())
-            prazo = col5.date_input("Prazo", value=date.today())
-
-            status = st.selectbox("Status", STATUS_ACAO)
-            progresso = st.slider("Progresso", 0, 100, 0, step=5)
-
-            if st.form_submit_button("Adicionar ação", type="primary"):
-                if not acao.strip():
-                    st.error("Informe a ação.")
-                elif prazo < inicio:
-                    st.error("O prazo não pode ser anterior ao início.")
-                else:
-                    nova = pd.DataFrame(
-                        [
-                            {
-                                "ID": len(dados["acoes"]) + 1,
-                                "Ação": acao.strip(),
-                                "Origem": origem,
-                                "Prioridade": prioridade,
-                                "Responsável": responsavel.strip(),
-                                "Início": inicio,
-                                "Prazo": prazo,
-                                "Status": status,
-                                "Progresso": progresso,
-                            }
-                        ]
-                    )
-
-                    dados["acoes"] = pd.concat(
-                        [dados["acoes"], nova],
-                        ignore_index=True,
-                    )
-                    st.rerun()
-
-    acoes = dados["acoes"]
-
-    if acoes.empty:
-        st.info("Nenhuma ação cadastrada.")
-    else:
-        st.dataframe(acoes, use_container_width=True, hide_index=True)
-
-        gantt = acoes.copy()
-        gantt["Início"] = pd.to_datetime(gantt["Início"])
-        gantt["Prazo"] = pd.to_datetime(gantt["Prazo"])
-
-        figura = px.timeline(
-            gantt,
-            x_start="Início",
-            x_end="Prazo",
-            y="Ação",
-            color="Prioridade",
-            hover_data=["Responsável", "Status", "Progresso"],
-            color_discrete_map={
-                "Crítica": "#c62828",
-                "Alta": "#ef6c00",
-                "Média": "#f9a825",
-                "Baixa": "#2e7d32",
-            },
+        origem = col1.selectbox(
+            "Origem",
+            [
+                "Assessment",
+                "Risco",
+                "Vulnerabilidade",
+                "Compliance",
+                "Reunião",
+                "Outro",
+            ],
         )
-        figura.update_yaxes(autorange="reversed")
-        st.plotly_chart(figura, use_container_width=True)
+        prioridade = col2.selectbox(
+            "Prioridade",
+            ["Crítica", "Alta", "Média", "Baixa"],
+        )
+        responsavel = col3.text_input("Responsável")
 
-        col1, col2 = st.columns([3, 1])
-        col1.download_button(
-            "Exportar ações",
-            acoes.to_csv(index=False).encode("utf-8-sig"),
-            "plano_de_acao.csv",
-            "text/csv",
+        col4, col5 = st.columns(2)
+
+        prazo = col4.date_input(
+            "Prazo",
+            value=date.today(),
+            format="DD/MM/YYYY",
+        )
+        status = col5.selectbox(
+            "Status",
+            [
+                "Não iniciada",
+                "Em andamento",
+                "Bloqueada",
+                "Concluída",
+            ],
         )
 
-        if col2.button("Excluir todas"):
-            dados["acoes"] = dataframe_acoes()
+        adicionar = st.form_submit_button(
+            "Adicionar ação",
+            type="primary",
+            use_container_width=True,
+        )
+
+        if adicionar:
+            if not acao.strip():
+                st.error("Descreva a ação.")
+            else:
+                dados["acoes"].append(
+                    {
+                        "ID": proximo_id(dados["acoes"]),
+                        "Ação": acao.strip(),
+                        "Origem": origem,
+                        "Prioridade": prioridade,
+                        "Responsável": responsavel.strip(),
+                        "Prazo": prazo.strftime("%d/%m/%Y"),
+                        "Status": status,
+                    }
+                )
+                st.success("Ação adicionada com sucesso.")
+                st.rerun()
+
+    df_acoes = dataframe_lista(
+        dados["acoes"],
+        COLUNAS_ACOES,
+    )
+
+    st.subheader("Roadmap")
+    st.dataframe(
+        df_acoes,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    if dados["acoes"]:
+        contagem_status = (
+            df_acoes["Status"].value_counts().reset_index()
+        )
+        contagem_status.columns = ["Status", "Quantidade"]
+
+        grafico = px.bar(
+            contagem_status,
+            x="Status",
+            y="Quantidade",
+            color="Status",
+            title="Ações por status",
+        )
+        st.plotly_chart(grafico, use_container_width=True)
+
+        col1, col2 = st.columns([2, 1])
+
+        acao_id = col1.selectbox(
+            "Selecione a ação para exclusão",
+            options=[item["ID"] for item in dados["acoes"]],
+            format_func=lambda valor: next(
+                (
+                    f"#{item['ID']} — {item['Ação']}"
+                    for item in dados["acoes"]
+                    if item["ID"] == valor
+                ),
+                str(valor),
+            ),
+            key=f"acao_exclusao_{organizacao['id']}",
+        )
+
+        if col2.button(
+            "Excluir ação",
+            key=f"excluir_acao_{organizacao['id']}",
+            use_container_width=True,
+        ):
+            dados["acoes"] = remover_registro(
+                dados["acoes"],
+                acao_id,
+            )
             st.rerun()
+
+        st.download_button(
+            "Baixar plano de ação em CSV",
+            data=df_acoes.to_csv(
+                index=False,
+                sep=";",
+            ).encode("utf-8-sig"),
+            file_name=f"plano-acao-{organizacao['id']}.csv",
+            mime="text/csv",
+        )
 
 
 # ============================================================
 # COMPLIANCE
 # ============================================================
 
-elif menu == "Compliance":
+
+def modulo_compliance():
+    # Correção do NameError: contexto obtido no início do módulo.
+    organizacao = obter_organizacao_ativa()
     dados = obter_dados_ativos()
+
+    if organizacao is None or dados is None:
+        st.error("Nenhuma organização ativa foi encontrada.")
+        return
 
     cabecalho(
         "Adequação e Compliance",
-        "Acompanhamento de NIST CSF, ISO 27001 e LGPD.",
+        "Acompanhamento de NIST CSF 2.0, ISO 27001 e LGPD.",
     )
 
-    framework = st.selectbox("Framework", list(FRAMEWORKS.keys()))
+    framework = st.selectbox(
+        "Framework",
+        options=list(FRAMEWORKS.keys()),
+        key=f"framework_{organizacao['id']}",
+    )
+
     pontuacoes = []
+    opcoes_percentual = [0, 25, 50, 75, 100]
 
     for indice, controle in enumerate(FRAMEWORKS[framework]):
         chave = f"{framework}_{indice}"
         col1, col2 = st.columns([3, 2])
-        col1.markdown(f"**{controle}**")
 
-        valor = col2.select_slider(
-            "Percentual",
-            options=[0, 25, 50, 75, 100],
-            value=dados["compliance"].get(chave, 0),
-            key=f"compliance_{organizacao['id']}_{chave}",
-            label_visibility="collapsed",
-        )
+        with col1:
+            st.markdown(f"**{indice + 1}. {controle}**")
+
+        valor_atual = dados["compliance"].get(chave, 0)
+
+        try:
+            valor_atual = int(valor_atual)
+        except (TypeError, ValueError):
+            valor_atual = 0
+
+        if valor_atual not in opcoes_percentual:
+            valor_atual = min(
+                opcoes_percentual,
+                key=lambda opcao: abs(opcao - valor_atual),
+            )
+
+        with col2:
+            valor = st.select_slider(
+                f"Conformidade de {controle}",
+                options=opcoes_percentual,
+                value=valor_atual,
+                key=(
+                    f"compliance_"
+                    f"{organizacao['id']}_"
+                    f"{chave}"
+                ),
+                label_visibility="collapsed",
+            )
 
         dados["compliance"][chave] = valor
         pontuacoes.append(valor)
 
-    media = round(sum(pontuacoes) / len(pontuacoes), 1)
-    st.progress(media / 100)
-    st.metric("Nível de conformidade", f"{media}%")
+    media = (
+        round(sum(pontuacoes) / len(pontuacoes), 1)
+        if pontuacoes
+        else 0.0
+    )
+
+    st.progress(min(max(media / 100, 0.0), 1.0))
+    st.metric("Nível de conformidade", f"{media:.1f}%")
 
     if media < 40:
-        st.error("Nível crítico de conformidade.")
+        st.error(
+            "Nível crítico de conformidade. "
+            "Priorize um plano de adequação."
+        )
     elif media < 70:
-        st.warning("Existem lacunas relevantes de conformidade.")
+        st.warning(
+            "Existem lacunas relevantes de conformidade."
+        )
     else:
-        st.success("Bom nível de conformidade.")
+        st.success(
+            "A organização apresenta um bom nível de conformidade."
+        )
+
+    if st.button(
+        "Limpar avaliação",
+        key=f"limpar_compliance_{organizacao['id']}_{framework}",
+    ):
+        prefixo_dados = f"{framework}_"
+
+        chaves_framework = [
+            chave_salva
+            for chave_salva in list(dados["compliance"].keys())
+            if chave_salva.startswith(prefixo_dados)
+        ]
+
+        for chave_salva in chaves_framework:
+            dados["compliance"].pop(chave_salva, None)
+
+        prefixo_widget = (
+            f"compliance_{organizacao['id']}_{framework}_"
+        )
+
+        chaves_widgets = [
+            chave_estado
+            for chave_estado in list(st.session_state.keys())
+            if str(chave_estado).startswith(prefixo_widget)
+        ]
+
+        for chave_estado in chaves_widgets:
+            del st.session_state[chave_estado]
+
+        st.rerun()
 
 
 # ============================================================
 # REUNIÕES
 # ============================================================
 
-elif menu == "Reuniões":
+
+def modulo_reunioes():
+    organizacao = obter_organizacao_ativa()
     dados = obter_dados_ativos()
 
+    if organizacao is None or dados is None:
+        st.error("Nenhuma organização ativa foi encontrada.")
+        return
+
     cabecalho(
-        "Reuniões Executivas",
-        "Registre decisões e próximos passos da consultoria.",
+        "Relatórios de Reunião",
+        "Registre reuniões, decisões e próximos passos.",
     )
 
-    with st.form("form_reuniao", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        data_reuniao = col1.date_input("Data", value=date.today())
-        titulo = col2.text_input("Título")
+    with st.form(
+        f"form_reuniao_{organizacao['id']}",
+        clear_on_submit=True,
+    ):
+        col1, col2 = st.columns([1, 2])
+
+        data_reuniao = col1.date_input(
+            "Data",
+            value=date.today(),
+            format="DD/MM/YYYY",
+        )
+        titulo = col2.text_input("Título da reunião")
+
         participantes = st.text_input("Participantes")
-        resumo = st.text_area("Resumo")
-        decisoes = st.text_area("Decisões")
-        proximos = st.text_area("Próximos passos")
+        notas = st.text_area(
+            "Notas, decisões e próximos passos",
+            height=180,
+        )
 
-        if st.form_submit_button("Registrar reunião", type="primary"):
+        salvar = st.form_submit_button(
+            "Salvar reunião",
+            type="primary",
+            use_container_width=True,
+        )
+
+        if salvar:
             if not titulo.strip():
-                st.error("Informe o título.")
+                st.error("Informe o título da reunião.")
             else:
-                nova = pd.DataFrame(
-                    [
-                        {
-                            "Data": data_reuniao,
-                            "Título": titulo.strip(),
-                            "Participantes": participantes.strip(),
-                            "Resumo": resumo.strip(),
-                            "Decisões": decisoes.strip(),
-                            "Próximos passos": proximos.strip(),
-                        }
-                    ]
+                dados["reunioes"].append(
+                    {
+                        "ID": proximo_id(dados["reunioes"]),
+                        "Data": data_reuniao.strftime("%d/%m/%Y"),
+                        "Título": titulo.strip(),
+                        "Participantes": participantes.strip(),
+                        "Notas": notas.strip(),
+                    }
                 )
+                st.success("Reunião registrada com sucesso.")
+                st.rerun()
 
-                dados["reunioes"] = pd.concat(
-                    [dados["reunioes"], nova],
-                    ignore_index=True,
+    if not dados["reunioes"]:
+        st.info("Nenhuma reunião registrada.")
+        return
+
+    for reuniao in reversed(dados["reunioes"]):
+        with st.expander(
+            f"{reuniao['Data']} — {reuniao['Título']}"
+        ):
+            st.write(
+                f"**Participantes:** "
+                f"{reuniao.get('Participantes') or 'Não informado'}"
+            )
+            st.write(reuniao.get("Notas") or "Sem notas.")
+
+            if st.button(
+                "Excluir reunião",
+                key=(
+                    f"excluir_reuniao_"
+                    f"{organizacao['id']}_"
+                    f"{reuniao['ID']}"
+                ),
+            ):
+                dados["reunioes"] = remover_registro(
+                    dados["reunioes"],
+                    reuniao["ID"],
                 )
                 st.rerun()
 
-    if dados["reunioes"].empty:
-        st.info("Nenhuma reunião registrada.")
-    else:
-        st.dataframe(
-            dados["reunioes"],
-            use_container_width=True,
-            hide_index=True,
-        )
-        st.download_button(
-            "Exportar atas",
-            dados["reunioes"].to_csv(index=False).encode("utf-8-sig"),
-            "reunioes.csv",
-            "text/csv",
-        )
+    df_reunioes = dataframe_lista(
+        dados["reunioes"],
+        COLUNAS_REUNIOES,
+    )
+
+    st.download_button(
+        "Baixar reuniões em CSV",
+        data=df_reunioes.to_csv(
+            index=False,
+            sep=";",
+        ).encode("utf-8-sig"),
+        file_name=f"reunioes-{organizacao['id']}.csv",
+        mime="text/csv",
+    )
 
 
 # ============================================================
 # RELATÓRIOS
 # ============================================================
 
-elif menu == "Relatórios":
+
+def modulo_relatorios():
     organizacao = obter_organizacao_ativa()
     dados = obter_dados_ativos()
-    arquivo_base = nome_seguro(organizacao["nome_fantasia"])
+
+    if organizacao is None or dados is None:
+        st.error("Nenhuma organização ativa foi encontrada.")
+        return
 
     cabecalho(
-        "Relatórios e Entregáveis",
-        "Gere o relatório executivo da organização selecionada.",
+        "Relatórios e Exportações",
+        "Gere entregáveis executivos consolidados para o cliente.",
     )
 
-    score = obter_score_geral(dados)
+    resultados = calcular_assessment(dados)
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Score geral", f"{score}%")
-    col2.metric("Maturidade", classificar_maturidade(score))
-    col3.metric(
-        "Itens registrados",
-        len(dados["riscos"]) + len(dados["acoes"]),
+
+    col1.metric(
+        "Maturidade geral",
+        f"{resultados['Geral']:.2f}/5",
+    )
+    col2.metric("Riscos", len(dados["riscos"]))
+    col3.metric("Ações", len(dados["acoes"]))
+
+    st.subheader("Resumo por dimensão")
+
+    df_resumo = pd.DataFrame(
+        [
+            {
+                "Dimensão": dimensao,
+                "Pontuação": round(resultados[dimensao], 2),
+                "Nível": classificar_maturidade(
+                    resultados[dimensao]
+                ),
+            }
+            for dimensao in DIMENSOES
+        ]
     )
 
-    st.info(f"Organização: {organizacao['nome_fantasia']}")
+    st.dataframe(
+        df_resumo,
+        use_container_width=True,
+        hide_index=True,
+    )
 
-    try:
-        pdf = gerar_pdf_executivo(
-            organizacao,
-            st.session_state.consultor,
+    csv_completo = gerar_csv_completo(
+        organizacao,
+        dados,
+    )
+
+    st.download_button(
+        "Baixar relatório consolidado em CSV",
+        data=csv_completo,
+        file_name=f"relatorio-ctr-defense-{organizacao['id']}.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+
+    pdf = gerar_pdf(organizacao, dados)
+
+    if pdf is None:
+        st.warning(
+            "A biblioteca ReportLab não está instalada. "
+            "Adicione `reportlab` ao requirements.txt para gerar PDF."
         )
-
+    else:
         st.download_button(
-            "Gerar e baixar relatório executivo",
+            "Baixar relatório executivo em PDF",
             data=pdf,
-            file_name=f"relatorio_ctr_defense_{arquivo_base}.pdf",
+            file_name=f"relatorio-ctr-defense-{organizacao['id']}.pdf",
             mime="application/pdf",
-            type="primary",
+            use_container_width=True,
         )
-    except Exception as erro:
-        st.error(f"Não foi possível gerar o PDF: {erro}")
 
-    st.subheader("Exportações individuais")
-
-    col1, col2, col3 = st.columns(3)
-
-    col1.download_button(
-        "Matriz de riscos",
-        dados["riscos"].to_csv(index=False).encode("utf-8-sig"),
-        f"riscos_{arquivo_base}.csv",
-        "text/csv",
-        use_container_width=True,
-    )
-
-    col2.download_button(
-        "Plano de ação",
-        dados["acoes"].to_csv(index=False).encode("utf-8-sig"),
-        f"acoes_{arquivo_base}.csv",
-        "text/csv",
-        use_container_width=True,
-    )
-
-    col3.download_button(
-        "Atas de reunião",
-        dados["reunioes"].to_csv(index=False).encode("utf-8-sig"),
-        f"reunioes_{arquivo_base}.csv",
-        "text/csv",
-        use_container_width=True,
+    st.info(
+        "Os dados desta versão são armazenados na sessão do Streamlit. "
+        "Para produção, utilize SQLite, PostgreSQL ou outro banco persistente."
     )
 
 
 # ============================================================
-# RODAPÉ
+# NAVEGAÇÃO
 # ============================================================
 
-st.markdown(
-    """
-    <div class="ctr-footer">
-        CTR DEFENSE — Plataforma de Consultoria em Cibersegurança<br>
-        NIST CSF 2.0 • ISO 27001 • LGPD • Gestão de Riscos
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+
+def construir_sidebar():
+    st.sidebar.markdown("## 🛡️ CTR DEFENSE")
+    st.sidebar.caption("Gestão de Consultoria Profissional")
+
+    organizacoes = st.session_state.organizacoes
+
+    if organizacoes:
+        ids = list(organizacoes.keys())
+        id_atual = st.session_state.get("organizacao_ativa_id")
+
+        if id_atual not in ids:
+            id_atual = ids[0]
+            st.session_state.organizacao_ativa_id = id_atual
+
+        indice_atual = ids.index(id_atual)
+
+        selecionada = st.sidebar.selectbox(
+            "Organização ativa",
+            options=ids,
+            index=indice_atual,
+            format_func=lambda organizacao_id: organizacoes[
+                organizacao_id
+            ]["nome"],
+            key="seletor_organizacao_sidebar",
+        )
+
+        if selecionada != st.session_state.organizacao_ativa_id:
+            st.session_state.organizacao_ativa_id = selecionada
+            st.rerun()
+
+        organizacao = obter_organizacao_ativa()
+
+        if organizacao:
+            st.sidebar.success(
+                f"Cliente ativo: {organizacao['nome']}"
+            )
+    else:
+        st.sidebar.warning("Cadastre uma organização para começar.")
+
+    menu = st.sidebar.radio(
+        "Módulos",
+        [
+            "Dashboard Executivo",
+            "Organizações",
+            "Assessment NIST CSF",
+            "Matriz de Riscos",
+            "Plano de Ação",
+            "Compliance",
+            "Reuniões",
+            "Relatórios",
+        ],
+    )
+
+    st.sidebar.markdown("---")
+    st.sidebar.caption(
+        f"CTR DEFENSE © {datetime.now().year} | Versão Pro"
+    )
+
+    return menu
+
+
+# ============================================================
+# EXECUÇÃO
+# ============================================================
+
+inicializar_estado()
+menu = construir_sidebar()
+
+if menu == "Organizações":
+    modulo_organizacoes()
+
+elif menu == "Dashboard Executivo":
+    modulo_dashboard()
+
+elif menu == "Assessment NIST CSF":
+    modulo_assessment()
+
+elif menu == "Matriz de Riscos":
+    modulo_riscos()
+
+elif menu == "Plano de Ação":
+    modulo_acoes()
+
+elif menu == "Compliance":
+    modulo_compliance()
+
+elif menu == "Reuniões":
+    modulo_reunioes()
+
+elif menu == "Relatórios":
+    modulo_relatorios()
