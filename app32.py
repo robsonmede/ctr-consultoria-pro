@@ -10,6 +10,9 @@ import streamlit as st
 
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
+import hashlib
+import hmac
+
 
 
 # ============================================================
@@ -431,6 +434,138 @@ COLUNAS_REUNIOES = [
     "ID", "Data", "Título", "Participantes", "Notas",
 ]
 
+# ============================================================
+# AUTENTICAÇÃO
+# ============================================================
+
+def hash_senha(senha):
+    return hashlib.sha256(
+        senha.encode("utf-8")
+    ).hexdigest()
+
+
+def obter_usuarios():
+    try:
+        return st.secrets["usuarios"]
+    except Exception:
+        return {}
+
+
+def autenticar_usuario(usuario, senha):
+    usuarios = obter_usuarios()
+
+    if usuario not in usuarios:
+        return None
+
+    senha_hash = hash_senha(senha)
+    senha_cadastrada = usuarios[usuario].get(
+        "senha_hash",
+        "",
+    )
+
+    if not hmac.compare_digest(
+        senha_hash,
+        senha_cadastrada,
+    ):
+        return None
+
+    return {
+        "usuario": usuario,
+        "nome": usuarios[usuario].get(
+            "nome",
+            usuario,
+        ),
+        "perfil": usuarios[usuario].get(
+            "perfil",
+            "Usuário",
+        ),
+    }
+
+
+def inicializar_autenticacao():
+    if "autenticado" not in st.session_state:
+        st.session_state.autenticado = False
+
+    if "usuario_logado" not in st.session_state:
+        st.session_state.usuario_logado = None
+
+
+def tela_login():
+    st.markdown(
+        """
+        <style>
+            .login-wrapper {
+                max-width: 460px;
+                margin: 5rem auto 0 auto;
+                padding: 2rem;
+                border: 1px solid #c8dce4;
+                border-radius: 16px;
+                background: #ffffff;
+                box-shadow: 0 12px 32px rgba(11, 48, 64, .12);
+            }
+
+            .login-title {
+                text-align: center;
+                color: #0b3040;
+                margin-bottom: .3rem;
+            }
+
+            .login-subtitle {
+                text-align: center;
+                color: #647b85;
+                margin-bottom: 1.5rem;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        <div class="login-wrapper">
+            <h1 class="login-title">🛡️ CTR DEFENSE</h1>
+            <p class="login-subtitle">
+                Acesse o painel de cibersegurança
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.form("form_login"):
+        usuario = st.text_input(
+            "Usuário",
+            autocomplete="username",
+        )
+
+        senha = st.text_input(
+            "Senha",
+            type="password",
+            autocomplete="current-password",
+        )
+
+        entrar = st.form_submit_button(
+            "Entrar",
+            type="primary",
+            use_container_width=True,
+        )
+
+        if entrar:
+            usuario_autenticado = autenticar_usuario(
+                usuario.strip(),
+                senha,
+            )
+
+            if usuario_autenticado:
+                st.session_state.autenticado = True
+                st.session_state.usuario_logado = (
+                    usuario_autenticado
+                )
+                st.rerun()
+            else:
+                st.error(
+                    "Usuário ou senha inválidos."
+                )
 
 # ============================================================
 # ESTADO
@@ -449,6 +584,8 @@ def criar_dados():
 
 
 def inicializar_estado():
+    inicializar_autenticacao()
+
     if "organizacoes" not in st.session_state:
         st.session_state.organizacoes = {}
 
@@ -2025,18 +2162,33 @@ def modulo_relatorios():
 # ============================================================
 
 def construir_sidebar():
+    usuario = st.session_state.get(
+        "usuario_logado",
+        {},
+    )
+
+    nome_usuario = usuario.get(
+        "nome",
+        "Usuário",
+    )
+
+    perfil_usuario = usuario.get(
+        "perfil",
+        "Usuário",
+    )
+
     st.sidebar.markdown("## CTR DEFENSE")
 
     st.sidebar.markdown(
-        """
+        f"""
         <div style="
             padding: .7rem;
             border: 1px solid rgba(255,255,255,.3);
             border-radius: 8px;
             margin-bottom: 1rem;
         ">
-            <strong>Administrador CTR</strong><br>
-            <small>Perfil: Administrador</small>
+            <strong>{nome_usuario}</strong><br>
+            <small>Perfil: {perfil_usuario}</small>
         </div>
         """,
         unsafe_allow_html=True,
@@ -2062,7 +2214,9 @@ def construir_sidebar():
             st.session_state.organizacao_ativa_id = selecionada
             st.rerun()
     else:
-        st.sidebar.warning("Cadastre uma organizacao.")
+        st.sidebar.warning(
+            "Cadastre uma organizacao."
+        )
 
     menu = st.sidebar.radio(
         "Modulos",
@@ -2086,24 +2240,15 @@ def construir_sidebar():
         f"CTR DEFENSE - {datetime.now().year}"
     )
 
-    st.sidebar.markdown(
-        '<div class="logout-button">',
-        unsafe_allow_html=True,
-    )
-
     if st.sidebar.button(
         "Sair",
         use_container_width=True,
         key="sair",
     ):
-        # Não apaga os dados das organizações.
+        st.session_state.autenticado = False
+        st.session_state.usuario_logado = None
         st.session_state.organizacao_ativa_id = None
         st.rerun()
-
-    st.sidebar.markdown(
-        "</div>",
-        unsafe_allow_html=True,
-    )
 
     return menu
 
