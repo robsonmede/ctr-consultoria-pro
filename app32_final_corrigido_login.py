@@ -20,7 +20,7 @@ import hmac
 # ============================================================
 
 st.set_page_config(
-    page_title="CTR DEFENSE",
+    page_title="CTR CYBERMETRICS",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -593,8 +593,8 @@ def tela_login():
         <div class="login-wrapper">
             <h1 class="login-title">🛡️ CTR CYBERMETRICS</h1>
             <p class="login-subtitle">
-                Cybersecurity Assessment & Analytics
-Ideal para destacar indicadores, pontuação de maturidade, métricas de conformidade e evolução dos controles.
+                Transforme controles em evolução mensurável.
+Plataforma de avaliação de maturidade em cibersegurança, análise de gaps, gestão de riscos e planejamento estratégico, baseada em frameworks reconhecidos.
             </p>
         </div>
         """,
