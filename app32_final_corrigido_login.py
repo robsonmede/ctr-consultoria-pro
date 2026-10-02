@@ -591,9 +591,10 @@ def tela_login():
     st.markdown(
         """
         <div class="login-wrapper">
-            <h1 class="login-title">🛡️ CTR DEFENSE</h1>
+            <h1 class="login-title">🛡️ CTR CYBERMETRICS</h1>
             <p class="login-subtitle">
-                Acesse o painel de cibersegurança
+                Cybersecurity Assessment & Analytics
+Ideal para destacar indicadores, pontuação de maturidade, métricas de conformidade e evolução dos controles.
             </p>
         </div>
         """,
